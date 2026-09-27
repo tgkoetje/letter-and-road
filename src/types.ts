@@ -130,3 +130,24 @@ export interface ComparePair {
   b: string
   insight: string
 }
+
+export interface BiographicalEvent {
+  id: string
+  title: string
+  yearStart: number
+  yearEnd?: number
+  yearDisplay: string
+  placeId?: string
+  summary: string
+  actsAnchors?: ScriptureRef[]
+  tags?: string[]
+}
+
+export interface CulturalContext {
+  id: string
+  title: string
+  appliesTo: { letterIds?: string[]; cityIds?: string[]; themes?: string[] }
+  summary: string
+  body: string
+  sources?: { label: string; url?: string; note?: string }[]
+}
