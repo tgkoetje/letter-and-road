@@ -234,6 +234,7 @@ function CulturalSection({
   cityId: string
   packs: ReturnType<typeof culturalContextsForCity>
 }) {
+  const app = useApp()
   if (!packs.length) return null
   return (
     <>
@@ -247,7 +248,7 @@ function CulturalSection({
             </summary>
             <div className="cultural-body">
               <p>{ctx.body}</p>
-              {ctx.whyItMattersToday && (
+              {app.showTeachingNotes && ctx.whyItMattersToday && (
                 <p className="cultural-today">
                   <em>Why it matters today.</em> {ctx.whyItMattersToday}
                 </p>

@@ -176,6 +176,7 @@ export function LetterDrawer() {
 
 
 function CulturalSection({ letterId, themes }: { letterId: string; themes: string[] }) {
+  const app = useApp()
   const packs = culturalContextsForLetter(letterId, themes)
   if (!packs.length) return null
   return (
@@ -190,7 +191,7 @@ function CulturalSection({ letterId, themes }: { letterId: string; themes: strin
             </summary>
             <div className="cultural-body">
               <p>{ctx.body}</p>
-              {ctx.whyItMattersToday && (
+              {app.showTeachingNotes && ctx.whyItMattersToday && (
                 <p className="cultural-today">
                   <em>Why it matters today.</em> {ctx.whyItMattersToday}
                 </p>

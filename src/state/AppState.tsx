@@ -22,6 +22,7 @@ interface Persisted {
   showTimeline?: boolean
   showLifeTimeline?: boolean
   showScrubber?: boolean
+  showTeachingNotes?: boolean
 }
 
 interface AppState {
@@ -36,6 +37,7 @@ interface AppState {
   showTimeline: boolean
   showLifeTimeline: boolean
   showScrubber: boolean
+  showTeachingNotes: boolean
   cityId: string | null
 }
 
@@ -65,6 +67,7 @@ type Action =
   | { type: 'setShowTimeline'; value: boolean }
   | { type: 'setShowLifeTimeline'; value: boolean }
   | { type: 'setShowScrubber'; value: boolean }
+  | { type: 'setShowTeachingNotes'; value: boolean }
   | { type: 'setCity'; id: string | null }
   | { type: 'applyRoute'; view: ViewId; letterId: string | null; compare: [string | null, string | null] }
 
@@ -91,6 +94,7 @@ const initialState: AppState = {
   showTimeline: false,
   showLifeTimeline: false,
   showScrubber: true,
+  showTeachingNotes: false,
   cityId: null,
 }
 
@@ -122,7 +126,7 @@ function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         phase: action.skipInvite ? 'explore' : state.phase,
-        menuOpen: action.skipInvite ? true : state.menuOpen,
+        menuOpen: false,
         filters: {
           ...state.filters,
           datingScheme: normalizeScheme(p.datingScheme),
@@ -131,6 +135,7 @@ function reducer(state: AppState, action: Action): AppState {
         showTimeline: p.showTimeline ?? false,
         showLifeTimeline: p.showLifeTimeline ?? false,
         showScrubber: p.showScrubber ?? true,
+        showTeachingNotes: p.showTeachingNotes ?? false,
       }
     }
     case 'setView':
@@ -146,7 +151,7 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, year: Math.min(max, Math.max(min, state.year + action.delta)) }
     }
     case 'dismissInvite':
-      return toExplore(state, { menuOpen: true, view: 'atlas' })
+      return toExplore(state, { menuOpen: false, view: 'atlas' })
     case 'enterComparePair':
       return toExplore(state, {
         view: 'compare',
@@ -158,7 +163,7 @@ function reducer(state: AppState, action: Action): AppState {
     case 'enterExploreCities':
       return toExplore(state, {
         view: 'atlas',
-        menuOpen: true,
+        menuOpen: false,
         showScrubber: true,
         selectedLetterId: null,
       })
@@ -179,7 +184,7 @@ function reducer(state: AppState, action: Action): AppState {
         : state.filters.themes
       return toExplore(state, {
         view: 'atlas',
-        menuOpen: true,
+        menuOpen: false,
         showTimeline: true,
         showScrubber: true,
         filters: { ...state.filters, themes },
@@ -269,6 +274,8 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, showLifeTimeline: action.value }
     case 'setShowScrubber':
       return { ...state, showScrubber: action.value }
+    case 'setShowTeachingNotes':
+      return { ...state, showTeachingNotes: action.value }
     case 'setCity': {
       const hasBioPlace =
         Boolean(action.id) &&
@@ -318,6 +325,7 @@ interface AppContextValue extends AppState {
   setShowTimeline: (value: boolean) => void
   setShowLifeTimeline: (value: boolean) => void
   setShowScrubber: (value: boolean) => void
+  setShowTeachingNotes: (value: boolean) => void
   setCity: (id: string | null) => void
   filterActive: boolean
 }
@@ -414,13 +422,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       showTimeline: state.showTimeline,
       showLifeTimeline: state.showLifeTimeline,
       showScrubber: state.showScrubber,
+      showTeachingNotes: state.showTeachingNotes,
     }
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted))
     } catch {
       /* ignore */
     }
-  }, [state.filters.datingScheme, state.layers, state.showTimeline, state.showLifeTimeline, state.showScrubber])
+  }, [state.filters.datingScheme, state.layers, state.showTimeline, state.showLifeTimeline, state.showScrubber, state.showTeachingNotes])
 
   useEffect(() => {
     if (state.phase === 'explore') markInviteSeen()
@@ -511,6 +520,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     (value: boolean) => dispatch({ type: 'setShowScrubber', value }),
     [],
   )
+  const setShowTeachingNotes = useCallback(
+    (value: boolean) => dispatch({ type: 'setShowTeachingNotes', value }),
+    [],
+  )
   const setCity = useCallback((id: string | null) => dispatch({ type: 'setCity', id }), [])
 
   const filterActive =
@@ -545,6 +558,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setShowTimeline,
       setShowLifeTimeline,
       setShowScrubber,
+      setShowTeachingNotes,
       setCity,
       filterActive,
     }),
@@ -574,6 +588,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setShowTimeline,
       setShowLifeTimeline,
       setShowScrubber,
+      setShowTeachingNotes,
       setCity,
       filterActive,
     ],

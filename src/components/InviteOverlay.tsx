@@ -55,7 +55,7 @@ export function InviteOverlay() {
         </div>
 
         <h1 id="invite-headline" className="invite-headline">
-          Thirteen letters. Thirty-six cities. Every road Paul walked.
+          Thirteen letters. Thirty-six cities. Paul’s mission on the map.
         </h1>
         <p className="invite-sub">
           Start inside the atlas — compare two letters, open a city, scrub the life of Paul, or step
@@ -109,8 +109,8 @@ export function InviteOverlay() {
             role="listitem"
             onClick={app.enterBeforePaul}
           >
-            <strong>Before Paul: The Persecutor</strong>
-            <span>Acts 7–9 — Damascus road on the life timeline</span>
+            <strong>Jump to Damascus (Acts 7–9)</strong>
+            <span>Life-timeline anchor — full Before Paul essay still parked</span>
           </button>
           <button
             type="button"
@@ -118,8 +118,8 @@ export function InviteOverlay() {
             role="listitem"
             onClick={app.enterAfterPaul}
           >
-            <strong>After Acts: The End of Paul</strong>
-            <span>Rome and the open end of Acts — Scripture first</span>
+            <strong>Jump to Rome, end of Acts</strong>
+            <span>Open end of Acts — full After Acts essay still parked</span>
           </button>
           <button
             type="button"

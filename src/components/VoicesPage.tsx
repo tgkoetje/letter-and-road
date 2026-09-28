@@ -99,8 +99,11 @@ export function VoicesPage() {
         ))}
       </div>
       <p className="voices-foot">
-        See also <strong>About &amp; method</strong> for how this atlas weighs Acts, the letters, and
-        tradition.
+        See also{' '}
+        <a href="#/about" className="voices-about-link">
+          About &amp; method
+        </a>{' '}
+        for how this atlas weighs Acts, the letters, and tradition.
       </p>
     </article>
   )
