@@ -19,6 +19,7 @@ interface Persisted {
   datingScheme?: string
   layers?: Layers
   showTimeline?: boolean
+  showLifeTimeline?: boolean
   showScrubber?: boolean
 }
 
@@ -34,6 +35,7 @@ interface AppState {
   compare: [string | null, string | null]
   menuOpen: boolean
   showTimeline: boolean
+  showLifeTimeline: boolean
   showScrubber: boolean
   cityId: string | null
 }
@@ -57,6 +59,7 @@ type Action =
   | { type: 'setComparePair'; a: string; b: string }
   | { type: 'setMenuOpen'; open: boolean }
   | { type: 'setShowTimeline'; value: boolean }
+  | { type: 'setShowLifeTimeline'; value: boolean }
   | { type: 'setShowScrubber'; value: boolean }
   | { type: 'setCity'; id: string | null }
   | { type: 'applyRoute'; view: ViewId; letterId: string | null; compare: [string | null, string | null] }
@@ -87,6 +90,7 @@ const initialState: AppState = {
   compare: [null, null],
   menuOpen: false,
   showTimeline: false,
+  showLifeTimeline: false,
   showScrubber: false,
   cityId: null,
 }
@@ -108,6 +112,7 @@ function reducer(state: AppState, action: Action): AppState {
         },
         layers: p.layers ?? state.layers,
         showTimeline: p.showTimeline ?? false,
+        showLifeTimeline: p.showLifeTimeline ?? false,
         showScrubber: p.showScrubber ?? false,
       }
     }
@@ -115,8 +120,10 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, view: action.view, cityId: null }
     case 'selectLetter':
       return { ...state, selectedLetterId: action.id, cityId: action.id ? null : state.cityId }
-    case 'setYear':
-      return { ...state, year: action.year }
+    case 'setYear': {
+      const { min, max } = yearBounds()
+      return { ...state, year: Math.min(max, Math.max(min, action.year)) }
+    }
     case 'nudgeYear': {
       const { min, max } = yearBounds()
       return { ...state, year: Math.min(max, Math.max(min, state.year + action.delta)) }
@@ -215,10 +222,16 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, menuOpen: action.open }
     case 'setShowTimeline':
       return { ...state, showTimeline: action.value }
+    case 'setShowLifeTimeline':
+      return { ...state, showLifeTimeline: action.value }
     case 'setShowScrubber':
       return { ...state, showScrubber: action.value }
     case 'setCity':
-      return { ...state, cityId: action.id }
+      return {
+        ...state,
+        cityId: action.id,
+        selectedLetterId: action.id ? null : state.selectedLetterId,
+      }
     case 'applyRoute':
       return {
         ...state,
@@ -246,6 +259,7 @@ interface AppContextValue extends AppState {
   setComparePair: (a: string, b: string) => void
   setMenuOpen: (open: boolean) => void
   setShowTimeline: (value: boolean) => void
+  setShowLifeTimeline: (value: boolean) => void
   setShowScrubber: (value: boolean) => void
   setCity: (id: string | null) => void
   filterActive: boolean
@@ -323,6 +337,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       datingScheme: state.filters.datingScheme,
       layers: state.layers,
       showTimeline: state.showTimeline,
+      showLifeTimeline: state.showLifeTimeline,
       showScrubber: state.showScrubber,
     }
     try {
@@ -330,7 +345,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } catch {
       /* ignore */
     }
-  }, [state.filters.datingScheme, state.layers, state.showTimeline, state.showScrubber])
+  }, [state.filters.datingScheme, state.layers, state.showTimeline, state.showLifeTimeline, state.showScrubber])
 
   useEffect(() => {
     if (state.phase !== 'playing') return
@@ -409,6 +424,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     (value: boolean) => dispatch({ type: 'setShowTimeline', value }),
     [],
   )
+  const setShowLifeTimeline = useCallback(
+    (value: boolean) => dispatch({ type: 'setShowLifeTimeline', value }),
+    [],
+  )
   const setShowScrubber = useCallback(
     (value: boolean) => dispatch({ type: 'setShowScrubber', value }),
     [],
@@ -442,6 +461,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setComparePair,
       setMenuOpen,
       setShowTimeline,
+      setShowLifeTimeline,
       setShowScrubber,
       setCity,
       filterActive,
@@ -465,6 +485,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setComparePair,
       setMenuOpen,
       setShowTimeline,
+      setShowLifeTimeline,
       setShowScrubber,
       setCity,
       filterActive,

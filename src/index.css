@@ -333,6 +333,39 @@ a {
   background: var(--sea-1);
 }
 
+.map-wrap--maplibre {
+  cursor: grab;
+  background: #f7f4ee;
+}
+.map-wrap--maplibre .maplibregl-canvas,
+.map-wrap--maplibre .maplibregl-canvas-container {
+  width: 100% !important;
+  height: 100% !important;
+}
+.map-wrap--maplibre .maplibregl-ctrl-attrib {
+  font-size: 0.62rem;
+  background: rgba(247, 244, 238, 0.82);
+  color: rgba(26, 34, 40, 0.7);
+  max-width: min(420px, 70%);
+}
+.map-wrap--maplibre .maplibregl-ctrl-attrib a {
+  color: rgba(36, 63, 92, 0.9);
+}
+.map-wrap--maplibre .maplibregl-ctrl-bottom-right {
+  right: 52px;
+  bottom: 4px;
+}
+.play-caption--overlay {
+  position: absolute;
+  left: 50%;
+  bottom: 56px;
+  transform: translateX(-50%);
+  z-index: 6;
+  width: min(420px, calc(100% - 24px));
+  pointer-events: none;
+}
+
+
 .land {
   fill: var(--land);
   stroke: var(--land-edge);
@@ -1420,4 +1453,72 @@ a.scripture-link,
   .travel-path.is-sea.is-live {
     animation: none !important;
   }
+}
+
+/* Cultural context in letter drawer */
+.cultural-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+.cultural-item {
+  border: 1px solid rgba(26, 20, 12, 0.12);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: rgba(26, 20, 12, 0.03);
+}
+.cultural-item summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cultural-item summary::-webkit-details-marker {
+  display: none;
+}
+.cultural-item summary strong {
+  font-size: 0.9rem;
+}
+.cultural-summary {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+.cultural-body {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(26, 20, 12, 0.08);
+}
+.cultural-today {
+  font-size: 0.85rem;
+}
+.drawer-inline-link {
+  display: inline;
+  width: auto;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--oxblood);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.city-intro {
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+.city-dot.is-selected {
+  cursor: pointer;
+}
+.city-dot.is-selected .city-label {
+  font-weight: 700;
+  fill: #f7f4ee;
+}
+.life-rail {
+  border-top: 1px solid rgba(232, 201, 122, 0.35);
+}
+.life-card.is-current {
+  outline: 1px solid rgba(232, 201, 122, 0.55);
 }

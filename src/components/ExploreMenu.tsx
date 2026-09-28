@@ -72,6 +72,14 @@ export function ExploreMenu() {
           <label className="menu-check">
             <input
               type="checkbox"
+              checked={app.showLifeTimeline}
+              onChange={(e) => app.setShowLifeTimeline(e.target.checked)}
+            />
+            Paul’s life timeline
+          </label>
+          <label className="menu-check">
+            <input
+              type="checkbox"
               checked={app.showScrubber}
               onChange={(e) => app.setShowScrubber(e.target.checked)}
             />

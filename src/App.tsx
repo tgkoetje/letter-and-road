@@ -1,7 +1,9 @@
 import { AboutPage } from './components/AboutPage'
 import { CompareView } from './components/CompareView'
 import { ExploreMenu, MapChrome, PageHeader } from './components/ExploreMenu'
+import { CityDrawer } from './components/CityDrawer'
 import { LetterDrawer } from './components/LetterDrawer'
+import { LifeTimeline } from './components/LifeTimeline'
 import { MediterraneanMap } from './components/MediterraneanMap'
 import { StoryTimeline } from './components/StoryTimeline'
 import { TimeScrubber } from './components/TimeScrubber'
@@ -24,6 +26,7 @@ function Shell() {
           <>
             <MediterraneanMap />
             {extras && app.showTimeline && <StoryTimeline />}
+            {extras && app.showLifeTimeline && <LifeTimeline />}
             {extras && app.showScrubber && <TimeScrubber />}
           </>
         )}
@@ -31,6 +34,7 @@ function Shell() {
         {app.view === 'about' && <AboutPage />}
       </main>
       <LetterDrawer />
+      <CityDrawer />
     </div>
   )
 }

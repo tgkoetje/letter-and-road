@@ -1,11 +1,11 @@
-import { yearBounds, yearFromPosition, yearPosition } from '../lib/chronology'
+import { yearBounds, yearFromPosition, yearPosition, yearTicks } from '../lib/chronology'
 import { useApp } from '../state/AppState'
 
 export function TimeScrubber() {
   const app = useApp()
   const { min, max } = yearBounds()
   const t = yearPosition(app.year)
-  const ticks = [48, 51, 54, 57, 60, 64, 68]
+  const ticks = yearTicks()
 
   return (
     <div className="scrubber">

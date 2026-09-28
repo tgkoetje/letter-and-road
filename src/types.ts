@@ -143,11 +143,43 @@ export interface BiographicalEvent {
   tags?: string[]
 }
 
+export type CulturalCategory =
+  | 'social'
+  | 'religious'
+  | 'political'
+  | 'theological'
+  | 'daily-life'
+
+export type CulturalAssumption = 'western' | 'eastern' | 'both'
+
 export interface CulturalContext {
   id: string
   title: string
+  category?: CulturalCategory
   appliesTo: { letterIds?: string[]; cityIds?: string[]; themes?: string[] }
   summary: string
   body: string
+  scriptureAnchors?: ScriptureRef[]
+  whyItMattersToday?: string
+  culturalAssumption?: CulturalAssumption
+  relatedIds?: string[]
+  sources?: { label: string; url?: string; note?: string }[]
+}
+
+export interface JourneyLinks {
+  prevCityIds: string[]
+  nextCityIds: string[]
+}
+
+export interface CityContext {
+  id: string
+  intro: string
+  politicalStatus: string
+  culturalDistinctive: string
+  paulThere: string
+  letterIds: string[]
+  themeIds: string[]
+  journeyLinks: JourneyLinks
+  scriptureAnchors: ScriptureRef[]
   sources?: { label: string; url?: string; note?: string }[]
 }

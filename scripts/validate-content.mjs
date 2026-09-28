@@ -21,6 +21,7 @@ const FILES = [
   { file: 'compare.json', def: 'CompareFile' },
   { file: 'biographical.json', def: 'BiographicalFile' },
   { file: 'cultural.json', def: 'CulturalFile' },
+  { file: 'city-contexts.json', def: 'CityContextsFile' },
 ]
 
 const schema = JSON.parse(readFileSync(schemaPath, 'utf8'))
