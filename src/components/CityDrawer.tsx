@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { CITY_BY_ID } from '../data/cities'
 import { CITY_CONTEXT_BY_ID } from '../data/city-contexts'
-import { CULTURAL_CONTEXT_BY_ID } from '../data/cultural'
+import { culturalContextsForCity, CULTURAL_CONTEXT_BY_ID } from '../data/cultural'
 import { LETTER_BY_ID } from '../data/letters'
 import { lettersForCity } from '../lib/chronology'
 import { useApp } from '../state/AppState'
@@ -61,6 +61,14 @@ export function CityDrawer() {
   const themeTitles = (pack?.themeIds ?? [])
     .map((id) => CULTURAL_CONTEXT_BY_ID[id])
     .filter(Boolean)
+  const culturalPacks = culturalContextsForCity(city.id)
+  const prevCities = (pack?.journeyLinks.prevCityIds ?? [])
+    .map((id) => CITY_BY_ID[id])
+    .filter(Boolean)
+  const nextCities = (pack?.journeyLinks.nextCityIds ?? [])
+    .map((id) => CITY_BY_ID[id])
+    .filter(Boolean)
+  const sources = pack?.sources ?? []
 
   return (
     <>
@@ -138,7 +146,57 @@ export function CityDrawer() {
               </>
             )}
 
+            {(prevCities.length > 0 || nextCities.length > 0) && (
+              <>
+                <h3>Journey links</h3>
+                <div className="journey-link-row">
+                  {prevCities.map((c) => (
+                    <button
+                      key={`prev-${c.id}`}
+                      type="button"
+                      className="pill journey-link-btn"
+                      onClick={() => app.setCity(c.id)}
+                    >
+                      ← {c.shortLabel}
+                    </button>
+                  ))}
+                  {nextCities.map((c) => (
+                    <button
+                      key={`next-${c.id}`}
+                      type="button"
+                      className="pill journey-link-btn"
+                      onClick={() => app.setCity(c.id)}
+                    >
+                      {c.shortLabel} →
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            <CulturalSection cityId={city.id} packs={culturalPacks} />
+
             <AnchorBlock title="Scripture anchors" refs={pack.scriptureAnchors} />
+
+            {sources.length > 0 && (
+              <>
+                <h3>Sources</h3>
+                <ul className="anchor-list sources-list">
+                  {sources.map((s) => (
+                    <li key={s.label}>
+                      {s.url ? (
+                        <a href={s.url} target="_blank" rel="noreferrer">
+                          {s.label}
+                        </a>
+                      ) : (
+                        <strong>{s.label}</strong>
+                      )}
+                      {s.note ? <span className="anchor-note"> — {s.note}</span> : null}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
           </>
         ) : (
           <>
@@ -161,9 +219,53 @@ export function CityDrawer() {
                 </ul>
               </>
             )}
+            <CulturalSection cityId={city.id} packs={culturalPacks} />
           </>
         )}
       </aside>
+    </>
+  )
+}
+
+function CulturalSection({
+  cityId,
+  packs,
+}: {
+  cityId: string
+  packs: ReturnType<typeof culturalContextsForCity>
+}) {
+  if (!packs.length) return null
+  return (
+    <>
+      <h3>Cultural context</h3>
+      <div className="cultural-list">
+        {packs.map((ctx) => (
+          <details key={`${cityId}-${ctx.id}`} className="cultural-item">
+            <summary>
+              <strong>{ctx.title}</strong>
+              <span className="cultural-summary">{ctx.summary}</span>
+            </summary>
+            <div className="cultural-body">
+              <p>{ctx.body}</p>
+              {ctx.whyItMattersToday && (
+                <p className="cultural-today">
+                  <em>Why it matters today.</em> {ctx.whyItMattersToday}
+                </p>
+              )}
+              {ctx.scriptureAnchors && ctx.scriptureAnchors.length > 0 && (
+                <ul className="anchor-list">
+                  {ctx.scriptureAnchors.map((r) => (
+                    <li key={r.search}>
+                      <ScriptureLink search={r.search}>{r.label}</ScriptureLink>
+                      {r.note ? <span className="anchor-note"> — {r.note}</span> : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </details>
+        ))}
+      </div>
     </>
   )
 }

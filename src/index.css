@@ -337,10 +337,16 @@ a {
   cursor: grab;
   background: #f7f4ee;
 }
-.map-wrap--maplibre .maplibregl-canvas,
-.map-wrap--maplibre .maplibregl-canvas-container {
-  width: 100% !important;
-  height: 100% !important;
+/* MapLibre adds .maplibregl-map to OUR container and its stylesheet sets
+   position:relative. That overrides .map-wrap { position:absolute }, so the
+   flex atlas collapses the map to height 0 and the canvas stays blank.
+   Beat that with two-class specificity; do not style .maplibregl-canvas. */
+.map-wrap.map-wrap--maplibre.maplibregl-map,
+.map-wrap.maplibregl-map {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 .map-wrap--maplibre .maplibregl-ctrl-attrib {
   font-size: 0.62rem;
@@ -1521,4 +1527,44 @@ a.scripture-link,
 }
 .life-card.is-current {
   outline: 1px solid rgba(232, 201, 122, 0.55);
+}
+.life-card.is-selected {
+  border-color: var(--accent);
+  box-shadow: 0 4px 14px rgba(31, 111, 154, 0.22);
+  outline: 2px solid rgba(31, 111, 154, 0.45);
+  outline-offset: 1px;
+}
+.life-card {
+  flex-basis: 200px;
+  min-height: 96px;
+}
+.life-card-summary {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--ink-soft);
+}
+.life-card-anchors {
+  font-size: 0.68rem;
+  line-height: 1.3;
+}
+.life-card-anchors .scripture-link {
+  font-size: inherit;
+}
+.journey-link-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.journey-link-btn {
+  cursor: pointer;
+  border: 1px solid rgba(31, 111, 154, 0.35);
+  background: rgba(31, 111, 154, 0.08);
+}
+.sources-list a {
+  color: var(--accent);
+  font-weight: 700;
 }

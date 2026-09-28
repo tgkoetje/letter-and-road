@@ -7,6 +7,7 @@ import {
   useReducer,
   type ReactNode,
 } from 'react'
+import { BIOGRAPHICAL_EVENTS } from '../data/biographical'
 import { LETTER_BY_ID } from '../data/letters'
 import { STORY } from '../data/story'
 import { useReducedMotion } from '../hooks'
@@ -91,7 +92,7 @@ const initialState: AppState = {
   menuOpen: false,
   showTimeline: false,
   showLifeTimeline: false,
-  showScrubber: false,
+  showScrubber: true,
   cityId: null,
 }
 
@@ -113,7 +114,7 @@ function reducer(state: AppState, action: Action): AppState {
         layers: p.layers ?? state.layers,
         showTimeline: p.showTimeline ?? false,
         showLifeTimeline: p.showLifeTimeline ?? false,
-        showScrubber: p.showScrubber ?? false,
+        showScrubber: p.showScrubber ?? true,
       }
     }
     case 'setView':
@@ -226,12 +227,17 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, showLifeTimeline: action.value }
     case 'setShowScrubber':
       return { ...state, showScrubber: action.value }
-    case 'setCity':
+    case 'setCity': {
+      const hasBioPlace =
+        Boolean(action.id) &&
+        BIOGRAPHICAL_EVENTS.some((ev) => ev.placeId === action.id)
       return {
         ...state,
         cityId: action.id,
         selectedLetterId: action.id ? null : state.selectedLetterId,
+        ...(hasBioPlace ? { showLifeTimeline: true } : {}),
       }
+    }
     case 'applyRoute':
       return {
         ...state,

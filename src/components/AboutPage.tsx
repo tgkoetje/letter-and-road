@@ -83,6 +83,11 @@ export function AboutPage() {
           Coastlines: Natural Earth 1:50m land (public domain), clipped to the eastern Mediterranean so
           Asia, the Levant, Sinai, and Egypt remain one landmass.
         </li>
+        <li>
+          Roman roads: Ancient World Mapping Center cultural roads (ODbL 1.0), Barrington Atlas /
+          OSM derived, clipped to the atlas window.
+        </li>
+        <li>Basemap tiles: OpenFreeMap / OpenMapTiles / OpenStreetMap contributors.</li>
       </ul>
       <p>Not affiliated with a denomination. Built as a public teaching aid for readers, youth groups, and pastors.</p>
     </article>

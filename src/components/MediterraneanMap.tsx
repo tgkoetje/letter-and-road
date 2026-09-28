@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useRef } from 'react'
 import {
   Map as MapLibreMap,
+  getVersion,
+  setWorkerUrl,
   type GeoJSONSource,
   type MapLayerMouseEvent,
 } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
+
 import { CITIES, CITY_BY_ID } from '../data/cities'
 import { CITY_CONTEXT_BY_ID } from '../data/city-contexts'
 import { IMPRISONMENTS, JOURNEYS } from '../data/journeys'
@@ -19,9 +22,19 @@ import {
   sampleLetterArc,
   arcTipBearing,
 } from '../lib/geo'
+import landGeojson from '../data/land-geojson.json' with { type: 'json' }
+import { LAND_ATTRIBUTION } from '../data/coastline'
 import { useApp } from '../state/AppState'
 import type { Letter } from '../types'
 import { MediterraneanMapSvg } from './MediterraneanMapSvg'
+
+// MapLibre v6 worker is an ES module that imports a sibling shared chunk.
+// Vite's worker pipeline injects /@vite/client into it in dev and breaks tiles.
+// Load the exact installed version's worker from jsDelivr (cross-origin); MapLibre
+// wraps that in a blob `import` so the CDN sibling shared.mjs resolves correctly.
+const MAPLIBRE_WORKER_URL =
+  `https://cdn.jsdelivr.net/npm/maplibre-gl@${getVersion()}/dist/maplibre-gl-worker.mjs`
+setWorkerUrl(MAPLIBRE_WORKER_URL)
 
 /** Feature flag: set VITE_USE_MAPLIBRE=false to restore the SVG atlas. Default true. */
 const USE_MAPLIBRE = import.meta.env.VITE_USE_MAPLIBRE !== 'false'
@@ -29,6 +42,8 @@ const USE_MAPLIBRE = import.meta.env.VITE_USE_MAPLIBRE !== 'false'
 const STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty'
 
 const SRC = {
+  land: 'lr-land',
+  roads: 'lr-roman-roads',
   journeys: 'lr-journeys',
   storyTravels: 'lr-story-travels',
   letters: 'lr-letters',
@@ -99,34 +114,49 @@ function MediterraneanMapLibre() {
     const el = wrapRef.current
     if (!el) return
 
+    setWorkerUrl(MAPLIBRE_WORKER_URL)
+    // Match the working smoke page first: center/zoom, then fitBounds after load.
+    // (Constructor `bounds` + maxBounds has been blanking the canvas in this shell.)
     const map = new MapLibreMap({
       container: el,
       style: STYLE_URL,
-      bounds: MAP_BOUNDS,
-      fitBoundsOptions: { padding: 24, animate: false },
+      center: [25, 37],
+      zoom: 4,
       attributionControl: { compact: true },
       cooperativeGestures: false,
-      fadeDuration: reduced ? 0 : 300,
+      fadeDuration: 0,
       minZoom: 3.5,
       maxZoom: 10,
-      maxBounds: [
-        [MAP_BOUNDS[0][0] - 8, MAP_BOUNDS[0][1] - 6],
-        [MAP_BOUNDS[1][0] + 8, MAP_BOUNDS[1][1] + 6],
-      ],
+      pixelRatio: 1,
+      maxCanvasSize: [8192, 8192],
     })
     mapRef.current = map
+    ;(window as unknown as { __lrMap?: MapLibreMap }).__lrMap = map
 
     map.dragRotate.disable()
     map.touchZoomRotate.disableRotation()
 
     const onLoad = () => {
+      map.resize()
+      map.fitBounds(MAP_BOUNDS, { padding: 24, animate: false })
       addOverlayImages(map)
-      ensureSources(map)
-      ensureLayers(map)
+      try {
+        ensureSources(map)
+        ensureLayers(map)
+      } catch (err) {
+        console.error('[maplibre] overlay setup failed', err)
+      }
       readyRef.current = true
       pendingPushRef.current?.()
     }
     map.on('load', onLoad)
+    map.on('error', (e) => {
+      console.error('[maplibre]', e.error || e)
+    })
+    // Container may still be laying out when the effect runs (flex atlas).
+    requestAnimationFrame(() => {
+      map.resize()
+    })
 
     const onCityClick = (e: MapLayerMouseEvent) => {
       const f = e.features?.[0]
@@ -494,6 +524,25 @@ function setSourceData(map: MapLibreMap, id: string, data: FC) {
 }
 
 function ensureSources(map: MapLibreMap) {
+  if (!map.getSource(SRC.land)) {
+    map.addSource(SRC.land, {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: (landGeojson as unknown as { features: FC['features'] }).features,
+      } as Parameters<GeoJSONSource['setData']>[0],
+      attribution: LAND_ATTRIBUTION,
+    })
+  }
+  if (!map.getSource(SRC.roads)) {
+    map.addSource(SRC.roads, {
+      type: 'geojson',
+      // Large AWMC extract: load by URL (public/), not bundled JSON import.
+      data: `${import.meta.env.BASE_URL}geo/roman-roads.geojson`,
+      attribution:
+        'Ancient World Mapping Center roads (ODbL 1.0); Barrington Atlas / OSM derived',
+    })
+  }
   const ids = [
     SRC.journeys,
     SRC.storyTravels,
@@ -512,6 +561,79 @@ function ensureSources(map: MapLibreMap) {
 }
 
 function ensureLayers(map: MapLibreMap) {
+  // Natural Earth land (same rings as the SVG atlas) under routes/cities.
+  if (!map.getLayer('lr-land-fill')) {
+    map.addLayer({
+      id: 'lr-land-fill',
+      type: 'fill',
+      source: SRC.land,
+      paint: {
+        'fill-color': '#e8dfd0',
+        'fill-opacity': 0.35,
+      },
+    })
+  }
+  if (!map.getLayer('lr-land-coast')) {
+    map.addLayer({
+      id: 'lr-land-coast',
+      type: 'line',
+      source: SRC.land,
+      paint: {
+        'line-color': '#8a7354',
+        'line-width': 1.1,
+        'line-opacity': 0.85,
+      },
+      layout: {
+        'line-cap': 'round',
+        'line-join': 'round',
+      },
+    })
+  }
+
+  // AWMC / Barrington-derived Roman roads (clipped to atlas bbox).
+  if (!map.getLayer('roman-roads-minor')) {
+    map.addLayer({
+      id: 'roman-roads-minor',
+      type: 'line',
+      source: SRC.roads,
+      filter: ['!=', ['get', 'major'], 1],
+      paint: {
+        'line-color': '#9a8b78',
+        'line-width': 0.9,
+        'line-opacity': 0.4,
+      },
+      layout: {
+        'line-cap': 'round',
+        'line-join': 'round',
+      },
+    })
+  }
+  if (!map.getLayer('roman-roads-major')) {
+    map.addLayer({
+      id: 'roman-roads-major',
+      type: 'line',
+      source: SRC.roads,
+      filter: ['==', ['get', 'major'], 1],
+      paint: {
+        'line-color': '#7d6b58',
+        'line-width': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          3.5,
+          1.15,
+          7,
+          1.85,
+        ],
+        'line-opacity': 0.55,
+      },
+      layout: {
+        'line-cap': 'round',
+        'line-join': 'round',
+      },
+    })
+  }
+
   if (!map.getLayer('journeys-line')) {
     map.addLayer({
       id: 'journeys-line',

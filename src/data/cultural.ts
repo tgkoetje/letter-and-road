@@ -20,3 +20,12 @@ export function culturalContextsForLetter(
     return themes.some((t) => themeSet.has(t.toLowerCase()))
   })
 }
+
+/** Cultural packs that apply to a city by id. */
+export function culturalContextsForCity(cityId: string): CulturalContext[] {
+  return CULTURAL_CONTEXTS.filter((ctx) => {
+    const ids = ctx.appliesTo.cityIds ?? []
+    return ids.includes(cityId)
+  })
+}
+
