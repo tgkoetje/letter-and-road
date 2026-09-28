@@ -1,6 +1,6 @@
 # After Acts: The End of Paul (parked)
 
-**Status:** Parked. Sketch only — no UI, no full narrative authoring, no content PR from this note yet.
+**Status:** Content still parked (no full forks UI as settled fact). First-visit IA deep-links to Rome city + late life timeline (Acts open end / 2 Timothy era). Tradition forks remain reference-only.
 
 **Module working title:** After Acts: The End of Paul
 

@@ -1,8 +1,8 @@
-# Landing page concept (parked)
+# Landing page concept (partially implemented)
 
-**Status:** Parked. Revisit after the site's visual design, content organization, and UI are further developed. **Do not build from this note yet.**
+**Status:** Partially implemented — first-visit invite UI un-parked (short compare “aha” motion + static headline + entry cards + Try Romans and Galatians nudge). Full marketing landing page / long video loop still parked.
 
-**Scope:** Sketch only — no UI, components, or code until this note is deliberately un-parked.
+**Scope:** First-visit atlas invite is live. Broader marketing landing remains a sketch until visual design and IA settle further.
 
 ---
 

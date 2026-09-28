@@ -26,9 +26,9 @@ export function MapChrome() {
         <span className="brand-title">Letter &amp; Road</span>
         <span className="brand-sub">Pauline Atlas</span>
       </button>
-      {app.phase === 'playing' ? (
-        <button type="button" className="nav-btn is-active" onClick={app.skipStory}>
-          Skip story
+      {app.phase === 'invite' ? (
+        <button type="button" className="nav-btn is-active" onClick={app.dismissInvite}>
+          Skip
         </button>
       ) : (
         <button
@@ -52,13 +52,6 @@ export function ExploreMenu() {
   return (
     <div className="explore-menu" role="region" aria-label="Map options">
       <div className="explore-grid">
-        <section>
-          <h3>Story</h3>
-          <button type="button" className="primary-btn" onClick={app.beginStory}>
-            Play the story again
-          </button>
-        </section>
-
         <section>
           <h3>Add to the map</h3>
           <label className="menu-check">
@@ -84,22 +77,6 @@ export function ExploreMenu() {
               onChange={(e) => app.setShowScrubber(e.target.checked)}
             />
             Year slider
-          </label>
-          <label className="menu-check">
-            <input
-              type="checkbox"
-              checked={app.layers.letters}
-              onChange={(e) => app.setLayer('letters', e.target.checked)}
-            />
-            Letters
-          </label>
-          <label className="menu-check">
-            <input
-              type="checkbox"
-              checked={app.layers.journeys}
-              onChange={(e) => app.setLayer('journeys', e.target.checked)}
-            />
-            Travels
           </label>
           <label className="menu-check">
             <input
@@ -188,11 +165,24 @@ export function ExploreMenu() {
         <section>
           <h3>Pages</h3>
           <div className="filter-group">
-            <button type="button" className="chip" onClick={() => app.setView('compare')}>
+            <button
+              type="button"
+              className="chip"
+              onClick={() => app.setComparePair('romans', 'galatians')}
+            >
               Compare letters
             </button>
             <button type="button" className="chip" onClick={() => app.setView('about')}>
               About &amp; method
+            </button>
+            <button type="button" className="chip" onClick={() => app.setView('voices')}>
+              Voices on Paul
+            </button>
+            <button type="button" className="chip" onClick={app.enterBeforePaul}>
+              Before Paul
+            </button>
+            <button type="button" className="chip" onClick={app.enterAfterPaul}>
+              After Acts
             </button>
           </div>
         </section>
@@ -230,6 +220,13 @@ export function PageHeader() {
           onClick={() => app.setView('about')}
         >
           About
+        </button>
+        <button
+          type="button"
+          className={`nav-btn${app.view === 'voices' ? ' is-active' : ''}`}
+          onClick={() => app.setView('voices')}
+        >
+          Voices
         </button>
       </nav>
     </header>

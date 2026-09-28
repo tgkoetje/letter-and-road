@@ -1,6 +1,6 @@
 # Before Paul: The Persecutor (parked)
 
-**Status:** Parked. Sketch only — no UI, no full narrative authoring, no content PR from this note yet.
+**Status:** Content still parked (no full narrative authoring). First-visit IA links into existing life timeline / Damascus-road bio events (Acts 7–9 era). Do not author the expandable essay from this note yet.
 
 **Module working title:** Before Paul: The Persecutor
 

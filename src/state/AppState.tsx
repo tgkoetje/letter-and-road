@@ -9,12 +9,12 @@ import {
 } from 'react'
 import { BIOGRAPHICAL_EVENTS } from '../data/biographical'
 import { LETTER_BY_ID } from '../data/letters'
-import { STORY } from '../data/story'
 import { useReducedMotion } from '../hooks'
 import { yearBounds } from '../lib/chronology'
 import type { DatingScheme, Filters, Layers, PeriodId, PlantedFilter, StoryPhase, ViewId } from '../types'
 
-const STORAGE_KEY = 'letter-and-road:v3'
+const STORAGE_KEY = 'letter-and-road:v4'
+const INVITE_SEEN_KEY = 'letter-and-road:invite-seen'
 
 interface Persisted {
   datingScheme?: string
@@ -27,10 +27,8 @@ interface Persisted {
 interface AppState {
   view: ViewId
   phase: StoryPhase
-  storyIndex: number
   selectedLetterId: string | null
   year: number
-  playCaption: string | null
   layers: Layers
   filters: Filters
   compare: [string | null, string | null]
@@ -42,14 +40,12 @@ interface AppState {
 }
 
 type Action =
-  | { type: 'hydrate'; persisted: Persisted }
+  | { type: 'hydrate'; persisted: Persisted; skipInvite: boolean }
   | { type: 'setView'; view: ViewId }
   | { type: 'selectLetter'; id: string | null }
   | { type: 'setYear'; year: number }
   | { type: 'nudgeYear'; delta: number }
-  | { type: 'beginStory' }
-  | { type: 'skipStory' }
-  | { type: 'storyAdvance' }
+  | { type: 'dismissInvite' }
   | { type: 'setLayer'; key: keyof Layers; value: boolean }
   | { type: 'setPlantedFilter'; value: PlantedFilter }
   | { type: 'togglePeriod'; id: PeriodId }
@@ -58,6 +54,13 @@ type Action =
   | { type: 'setScheme'; scheme: DatingScheme }
   | { type: 'setCompare'; slot: 0 | 1; id: string | null }
   | { type: 'setComparePair'; a: string; b: string }
+  | { type: 'enterComparePair'; a: string; b: string }
+  | { type: 'enterExploreCities' }
+  | { type: 'enterExploreTimeline' }
+  | { type: 'enterExploreThemes'; theme?: string }
+  | { type: 'enterBeforePaul' }
+  | { type: 'enterAfterPaul' }
+  | { type: 'enterVoices' }
   | { type: 'setMenuOpen'; open: boolean }
   | { type: 'setShowTimeline'; value: boolean }
   | { type: 'setShowLifeTimeline'; value: boolean }
@@ -66,10 +69,7 @@ type Action =
   | { type: 'applyRoute'; view: ViewId; letterId: string | null; compare: [string | null, string | null] }
 
 const defaultLayers: Layers = {
-  journeys: true,
-  letters: true,
   imprisonments: false,
-  citiesOnly: false,
 }
 
 const defaultFilters: Filters = {
@@ -81,11 +81,9 @@ const defaultFilters: Filters = {
 
 const initialState: AppState = {
   view: 'atlas',
-  phase: 'playing',
-  storyIndex: 0,
+  phase: 'invite',
   selectedLetterId: null,
-  year: STORY[0]?.year ?? 34,
-  playCaption: STORY[0]?.caption ?? null,
+  year: 48,
   layers: defaultLayers,
   filters: defaultFilters,
   compare: [null, null],
@@ -101,24 +99,42 @@ function normalizeScheme(raw: string | undefined): DatingScheme {
   return 'consensus'
 }
 
+function normalizeLayers(raw: Layers | undefined): Layers {
+  if (!raw) return defaultLayers
+  return {
+    imprisonments: Boolean(raw.imprisonments),
+  }
+}
+
+function toExplore(state: AppState, patch: Partial<AppState> = {}): AppState {
+  return {
+    ...state,
+    phase: 'explore',
+    menuOpen: false,
+    ...patch,
+  }
+}
+
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'hydrate': {
       const p = action.persisted
       return {
         ...state,
+        phase: action.skipInvite ? 'explore' : state.phase,
+        menuOpen: action.skipInvite ? true : state.menuOpen,
         filters: {
           ...state.filters,
           datingScheme: normalizeScheme(p.datingScheme),
         },
-        layers: p.layers ?? state.layers,
+        layers: normalizeLayers(p.layers),
         showTimeline: p.showTimeline ?? false,
         showLifeTimeline: p.showLifeTimeline ?? false,
         showScrubber: p.showScrubber ?? true,
       }
     }
     case 'setView':
-      return { ...state, view: action.view, cityId: null }
+      return { ...state, view: action.view, cityId: null, phase: 'explore' }
     case 'selectLetter':
       return { ...state, selectedLetterId: action.id, cityId: action.id ? null : state.cityId }
     case 'setYear': {
@@ -129,58 +145,78 @@ function reducer(state: AppState, action: Action): AppState {
       const { min, max } = yearBounds()
       return { ...state, year: Math.min(max, Math.max(min, state.year + action.delta)) }
     }
-    case 'beginStory': {
-      const first = STORY[0]
-      return {
-        ...state,
-        phase: 'playing',
-        storyIndex: 0,
-        playCaption: first?.caption ?? null,
-        year: first?.year ?? 48,
+    case 'dismissInvite':
+      return toExplore(state, { menuOpen: true, view: 'atlas' })
+    case 'enterComparePair':
+      return toExplore(state, {
+        view: 'compare',
+        compare: [action.a, action.b],
         menuOpen: false,
         selectedLetterId: null,
+        cityId: null,
+      })
+    case 'enterExploreCities':
+      return toExplore(state, {
         view: 'atlas',
-      }
-    }
-    case 'skipStory':
-      return {
-        ...state,
-        phase: 'explore',
-        storyIndex: STORY.length,
-        playCaption: null,
-        year: 67,
         menuOpen: true,
+        showScrubber: true,
+        selectedLetterId: null,
+      })
+    case 'enterExploreTimeline':
+      return toExplore(state, {
         view: 'atlas',
-      }
-    case 'storyAdvance': {
-      const next = state.storyIndex + 1
-      if (next >= STORY.length) {
-        return {
-          ...state,
-          phase: 'explore',
-          storyIndex: STORY.length,
-          playCaption: null,
-          year: 67,
-          menuOpen: true,
-        }
-      }
-      const ev = STORY[next]
-      return {
-        ...state,
-        storyIndex: next,
-        playCaption: ev.caption,
-        year: ev.year,
-      }
+        menuOpen: false,
+        showTimeline: true,
+        showLifeTimeline: true,
+        showScrubber: true,
+        selectedLetterId: null,
+      })
+    case 'enterExploreThemes': {
+      const themes = action.theme
+        ? state.filters.themes.includes(action.theme)
+          ? state.filters.themes
+          : [...state.filters.themes, action.theme]
+        : state.filters.themes
+      return toExplore(state, {
+        view: 'atlas',
+        menuOpen: true,
+        showTimeline: true,
+        showScrubber: true,
+        filters: { ...state.filters, themes },
+        selectedLetterId: null,
+      })
     }
+    case 'enterBeforePaul':
+      // Existing bio: Stephen persecution → Damascus road (Acts 7–9 era). No new narrative.
+      return toExplore(state, {
+        view: 'atlas',
+        menuOpen: false,
+        showLifeTimeline: true,
+        showScrubber: true,
+        year: 34,
+        cityId: 'damascus_road',
+        selectedLetterId: null,
+      })
+    case 'enterAfterPaul':
+      // Acts open end + late Rome / 2 Timothy era via existing timeline + city. Tradition not asserted as Scripture.
+      return toExplore(state, {
+        view: 'atlas',
+        menuOpen: false,
+        showLifeTimeline: true,
+        showScrubber: true,
+        year: 62,
+        cityId: 'rome',
+        selectedLetterId: null,
+      })
+    case 'enterVoices':
+      return toExplore(state, {
+        view: 'voices',
+        menuOpen: false,
+        selectedLetterId: null,
+        cityId: null,
+      })
     case 'setLayer': {
       const layers = { ...state.layers, [action.key]: action.value }
-      if (action.key === 'citiesOnly' && action.value) {
-        layers.letters = false
-        layers.journeys = false
-        layers.imprisonments = false
-      }
-      if (action.key !== 'citiesOnly' && action.value) layers.citiesOnly = false
-      if (action.key === 'letters' && action.value) layers.citiesOnly = false
       return { ...state, layers }
     }
     case 'setPlantedFilter':
@@ -215,10 +251,16 @@ function reducer(state: AppState, action: Action): AppState {
     case 'setCompare': {
       const compare: [string | null, string | null] = [...state.compare]
       compare[action.slot] = action.id
-      return { ...state, compare, view: 'compare', menuOpen: false }
+      return { ...state, compare, view: 'compare', menuOpen: false, phase: 'explore' }
     }
     case 'setComparePair':
-      return { ...state, compare: [action.a, action.b], view: 'compare', menuOpen: false }
+      return {
+        ...state,
+        compare: [action.a, action.b],
+        view: 'compare',
+        menuOpen: false,
+        phase: 'explore',
+      }
     case 'setMenuOpen':
       return { ...state, menuOpen: action.open }
     case 'setShowTimeline':
@@ -238,13 +280,16 @@ function reducer(state: AppState, action: Action): AppState {
         ...(hasBioPlace ? { showLifeTimeline: true } : {}),
       }
     }
-    case 'applyRoute':
+    case 'applyRoute': {
+      const deep = action.view !== 'atlas' || Boolean(action.letterId) || Boolean(action.compare[0])
       return {
         ...state,
         view: action.view,
         selectedLetterId: action.letterId,
         compare: action.compare,
+        ...(deep ? { phase: 'explore' as const } : {}),
       }
+    }
   }
 }
 
@@ -253,8 +298,14 @@ interface AppContextValue extends AppState {
   setView: (view: ViewId) => void
   setYear: (year: number) => void
   nudgeYear: (delta: number) => void
-  beginStory: () => void
-  skipStory: () => void
+  dismissInvite: () => void
+  enterComparePair: (a: string, b: string) => void
+  enterExploreCities: () => void
+  enterExploreTimeline: () => void
+  enterExploreThemes: (theme?: string) => void
+  enterBeforePaul: () => void
+  enterAfterPaul: () => void
+  enterVoices: () => void
   setLayer: (key: keyof Layers, value: boolean) => void
   setPlantedFilter: (value: PlantedFilter) => void
   togglePeriod: (id: PeriodId) => void
@@ -269,7 +320,6 @@ interface AppContextValue extends AppState {
   setShowScrubber: (value: boolean) => void
   setCity: (id: string | null) => void
   filterActive: boolean
-  currentStoryEvent: (typeof STORY)[number] | null
 }
 
 const AppContext = createContext<AppContextValue | null>(null)
@@ -281,7 +331,7 @@ function parseHash(): {
 } {
   const raw = window.location.hash.replace(/^#\/?/, '')
   const parts = raw.split('/').filter(Boolean)
-  const views: ViewId[] = ['atlas', 'compare', 'about']
+  const views: ViewId[] = ['atlas', 'compare', 'about', 'voices']
   let view: ViewId = 'atlas'
   let letterId: string | null = null
   const compare: [string | null, string | null] = [null, null]
@@ -314,19 +364,38 @@ function writeHash(state: AppState) {
   }
 }
 
+function markInviteSeen() {
+  try {
+    localStorage.setItem(INVITE_SEEN_KEY, '1')
+  } catch {
+    /* ignore */
+  }
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState)
   const reduced = useReducedMotion()
 
   useEffect(() => {
+    let inviteSeen = false
     try {
-      const raw = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem('letter-and-road:v2')
-      if (raw) dispatch({ type: 'hydrate', persisted: JSON.parse(raw) as Persisted })
+      inviteSeen = localStorage.getItem(INVITE_SEEN_KEY) === '1'
+      const raw = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem('letter-and-road:v3')
+      const persisted = raw ? (JSON.parse(raw) as Persisted) : {}
+      const route = parseHash()
+      const deepLink =
+        route.view !== 'atlas' || Boolean(route.letterId) || Boolean(route.compare[0])
+      dispatch({
+        type: 'hydrate',
+        persisted,
+        skipInvite: inviteSeen || deepLink || reduced,
+      })
+      if (inviteSeen || deepLink || reduced) markInviteSeen()
     } catch {
-      /* ignore */
+      if (reduced) dispatch({ type: 'dismissInvite' })
     }
     dispatch({ type: 'applyRoute', ...parseHash() })
-  }, [])
+  }, [reduced])
 
   useEffect(() => {
     const onHash = () => dispatch({ type: 'applyRoute', ...parseHash() })
@@ -354,19 +423,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [state.filters.datingScheme, state.layers, state.showTimeline, state.showLifeTimeline, state.showScrubber])
 
   useEffect(() => {
-    if (state.phase !== 'playing') return
-    if (reduced) {
-      dispatch({ type: 'skipStory' })
-      return
-    }
-    const ev = STORY[state.storyIndex]
-    if (!ev) {
-      dispatch({ type: 'skipStory' })
-      return
-    }
-    const id = window.setTimeout(() => dispatch({ type: 'storyAdvance' }), ev.duration)
-    return () => window.clearTimeout(id)
-  }, [state.phase, state.storyIndex, reduced])
+    if (state.phase === 'explore') markInviteSeen()
+  }, [state.phase])
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -379,10 +437,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
           target.isContentEditable)
       if (typing) return
       if (e.key === 'Escape') {
+        if (state.phase === 'invite') {
+          dispatch({ type: 'dismissInvite' })
+          return
+        }
         if (state.selectedLetterId) dispatch({ type: 'selectLetter', id: null })
         else if (state.cityId) dispatch({ type: 'setCity', id: null })
         else if (state.menuOpen) dispatch({ type: 'setMenuOpen', open: false })
-        else if (state.phase === 'playing') dispatch({ type: 'skipStory' })
         return
       }
       if (state.view !== 'atlas' || state.phase !== 'explore') return
@@ -403,8 +464,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const setView = useCallback((view: ViewId) => dispatch({ type: 'setView', view }), [])
   const setYear = useCallback((year: number) => dispatch({ type: 'setYear', year }), [])
   const nudgeYear = useCallback((delta: number) => dispatch({ type: 'nudgeYear', delta }), [])
-  const beginStory = useCallback(() => dispatch({ type: 'beginStory' }), [])
-  const skipStory = useCallback(() => dispatch({ type: 'skipStory' }), [])
+  const dismissInvite = useCallback(() => dispatch({ type: 'dismissInvite' }), [])
+  const enterComparePair = useCallback(
+    (a: string, b: string) => dispatch({ type: 'enterComparePair', a, b }),
+    [],
+  )
+  const enterExploreCities = useCallback(() => dispatch({ type: 'enterExploreCities' }), [])
+  const enterExploreTimeline = useCallback(() => dispatch({ type: 'enterExploreTimeline' }), [])
+  const enterExploreThemes = useCallback(
+    (theme?: string) => dispatch({ type: 'enterExploreThemes', theme }),
+    [],
+  )
+  const enterBeforePaul = useCallback(() => dispatch({ type: 'enterBeforePaul' }), [])
+  const enterAfterPaul = useCallback(() => dispatch({ type: 'enterAfterPaul' }), [])
+  const enterVoices = useCallback(() => dispatch({ type: 'enterVoices' }), [])
   const setLayer = useCallback(
     (key: keyof Layers, value: boolean) => dispatch({ type: 'setLayer', key, value }),
     [],
@@ -445,9 +518,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     state.filters.periods.length > 0 ||
     state.filters.themes.length > 0
 
-  const currentStoryEvent =
-    state.phase === 'playing' && state.storyIndex >= 0 ? (STORY[state.storyIndex] ?? null) : null
-
   const value = useMemo<AppContextValue>(
     () => ({
       ...state,
@@ -455,8 +525,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setView,
       setYear,
       nudgeYear,
-      beginStory,
-      skipStory,
+      dismissInvite,
+      enterComparePair,
+      enterExploreCities,
+      enterExploreTimeline,
+      enterExploreThemes,
+      enterBeforePaul,
+      enterAfterPaul,
+      enterVoices,
       setLayer,
       setPlantedFilter,
       togglePeriod,
@@ -471,7 +547,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setShowScrubber,
       setCity,
       filterActive,
-      currentStoryEvent,
     }),
     [
       state,
@@ -479,8 +554,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setView,
       setYear,
       nudgeYear,
-      beginStory,
-      skipStory,
+      dismissInvite,
+      enterComparePair,
+      enterExploreCities,
+      enterExploreTimeline,
+      enterExploreThemes,
+      enterBeforePaul,
+      enterAfterPaul,
+      enterVoices,
       setLayer,
       setPlantedFilter,
       togglePeriod,
@@ -495,7 +576,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setShowScrubber,
       setCity,
       filterActive,
-      currentStoryEvent,
     ],
   )
 

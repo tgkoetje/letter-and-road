@@ -1,6 +1,6 @@
 # What Others Say About Paul (parked)
 
-**Status:** Parked. Sketch only — no UI, no full authoring, no content PR from this note yet.
+**Status:** Content still parked (no full essays). First-visit IA + `#/voices` surface a lightweight stub: six voice cards with one-liners and Scripture links only.
 
 **Module working title:** What Others Say About Paul
 

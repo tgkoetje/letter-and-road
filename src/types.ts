@@ -2,7 +2,7 @@ export type AudienceType = 'planted' | 'unvisited' | 'delegate' | 'household'
 
 export type DatingScheme = 'consensus' | 'debated'
 
-export type StoryPhase = 'playing' | 'explore'
+export type StoryPhase = 'invite' | 'explore'
 
 export type PeriodId =
   | 'after-first'
@@ -14,7 +14,7 @@ export type PeriodId =
 
 export type ThemeGroup = 'coming' | 'cross' | 'christ' | 'church'
 
-export type ViewId = 'atlas' | 'compare' | 'about'
+export type ViewId = 'atlas' | 'compare' | 'about' | 'voices'
 
 export type PlantedFilter = 'all' | 'planted' | 'unvisited' | 'individuals'
 
@@ -112,10 +112,7 @@ export interface PeriodMeta {
 }
 
 export interface Layers {
-  journeys: boolean
-  letters: boolean
   imprisonments: boolean
-  citiesOnly: boolean
 }
 
 export interface Filters {

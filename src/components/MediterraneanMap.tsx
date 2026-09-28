@@ -5,27 +5,17 @@ import {
   setWorkerUrl,
   type GeoJSONSource,
   type MapLayerMouseEvent,
+  type StyleSpecification,
 } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
 import { CITIES, CITY_BY_ID } from '../data/cities'
 import { CITY_CONTEXT_BY_ID } from '../data/city-contexts'
-import { IMPRISONMENTS, JOURNEYS } from '../data/journeys'
-import { LETTERS } from '../data/letters'
-import { AUDIENCE_META } from '../data/periods'
-import { START_LABEL_IDS, STORY, type StoryEvent } from '../data/story'
+import { IMPRISONMENTS } from '../data/journeys'
+import { START_LABEL_IDS } from '../data/story'
 import { useMediaQuery, useReducedMotion } from '../hooks'
-import { arcState, datingOf, matchesFilters, type ArcState } from '../lib/chronology'
-import {
-  MAP_BOUNDS,
-  offsetToLonLat,
-  sampleLetterArc,
-  arcTipBearing,
-} from '../lib/geo'
-import landGeojson from '../data/land-geojson.json' with { type: 'json' }
-import { LAND_ATTRIBUTION } from '../data/coastline'
+import { MAP_BOUNDS, offsetToLonLat } from '../lib/geo'
 import { useApp } from '../state/AppState'
-import type { Letter } from '../types'
 import { MediterraneanMapSvg } from './MediterraneanMapSvg'
 
 // MapLibre v6 worker is an ES module that imports a sibling shared chunk.
@@ -42,16 +32,45 @@ const USE_MAPLIBRE = import.meta.env.VITE_USE_MAPLIBRE !== 'false'
 const STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty'
 
 const SRC = {
-  land: 'lr-land',
   roads: 'lr-roman-roads',
-  journeys: 'lr-journeys',
-  storyTravels: 'lr-story-travels',
-  letters: 'lr-letters',
-  letterAlts: 'lr-letter-alts',
-  letterTips: 'lr-letter-tips',
   prisons: 'lr-prisons',
   cities: 'lr-cities',
 } as const
+
+/** Liberty basemap layers to mute (modern admin / place / POI / road labels). */
+const MUTE_OPACITY: Record<string, number> = {
+  boundary_2: 0.22,
+  boundary_3: 0.12,
+  boundary_disputed: 0.18,
+  label_country_1: 0.28,
+  label_country_2: 0.28,
+  label_country_3: 0.22,
+  label_state: 0.2,
+  label_city: 0.22,
+  label_city_capital: 0.28,
+  label_town: 0.14,
+  label_village: 0.1,
+  label_other: 0.12,
+  water_name_point_label: 0.45,
+  water_name_line_label: 0.4,
+  waterway_line_label: 0.35,
+}
+
+const HIDE_LAYER_IDS = new Set([
+  'poi_r1',
+  'poi_r7',
+  'poi_r20',
+  'poi_transit',
+  'highway-name-path',
+  'highway-name-minor',
+  'highway-name-major',
+  'highway-shield-non-us',
+  'highway-shield-us-interstate',
+  'road_shield_us',
+  'airport',
+  'road_one_way_arrow',
+  'road_one_way_arrow_opposite',
+])
 
 type LonLat = [number, number]
 
@@ -88,26 +107,7 @@ function MediterraneanMapLibre() {
   const appRef = useRef(app)
   appRef.current = app
 
-  const visibleLetters = useMemo(
-    () => LETTERS.filter((l) => matchesFilters(l, app.filters)),
-    [app.filters],
-  )
-
-  const storyEvents = app.phase === 'playing' ? STORY.slice(0, app.storyIndex + 1) : []
-  const pastTravels = storyEvents.filter(
-    (e): e is Extract<StoryEvent, { type: 'travel' }> => e.type === 'travel',
-  )
-  const current = app.currentStoryEvent
-  const revealedLetterIds = new Set(
-    storyEvents.filter((e) => e.type === 'letter').map((e) => e.letterId),
-  )
-  const liveLetterId = current?.type === 'letter' ? current.letterId : null
-
-  const showLetters = app.phase === 'explore' && app.layers.letters && !app.layers.citiesOnly
-  const showJourneys = app.phase === 'explore' && app.layers.journeys && !app.layers.citiesOnly
-  const showPrisons = app.phase === 'explore' && app.layers.imprisonments && !app.layers.citiesOnly
-  const showStoryTravels = app.phase === 'playing'
-  const showStoryLetters = app.phase === 'playing'
+  const showPrisons = app.phase === 'explore' && app.layers.imprisonments
 
   // --- Map init ---
   useEffect(() => {
@@ -115,8 +115,6 @@ function MediterraneanMapLibre() {
     if (!el) return
 
     setWorkerUrl(MAPLIBRE_WORKER_URL)
-    // Match the working smoke page first: center/zoom, then fitBounds after load.
-    // (Constructor `bounds` + maxBounds has been blanking the canvas in this shell.)
     const map = new MapLibreMap({
       container: el,
       style: STYLE_URL,
@@ -139,8 +137,9 @@ function MediterraneanMapLibre() {
     const onLoad = () => {
       map.resize()
       map.fitBounds(MAP_BOUNDS, { padding: 24, animate: false })
-      addOverlayImages(map)
       try {
+        muteBasemap(map)
+        addOverlayImages(map)
         ensureSources(map)
         ensureLayers(map)
       } catch (err) {
@@ -153,7 +152,6 @@ function MediterraneanMapLibre() {
     map.on('error', (e) => {
       console.error('[maplibre]', e.error || e)
     })
-    // Container may still be laying out when the effect runs (flex atlas).
     requestAnimationFrame(() => {
       map.resize()
     })
@@ -162,12 +160,6 @@ function MediterraneanMapLibre() {
       const f = e.features?.[0]
       const id = f?.properties?.id as string | undefined
       if (id) appRef.current.setCity(id)
-    }
-    const onLetterClick = (e: MapLayerMouseEvent) => {
-      const f = e.features?.[0]
-      const id = f?.properties?.id as string | undefined
-      const interactive = f?.properties?.interactive
-      if (id && interactive) appRef.current.selectLetter(id)
     }
 
     const setPointer = () => {
@@ -179,13 +171,10 @@ function MediterraneanMapLibre() {
 
     map.on('click', 'cities-circle', onCityClick)
     map.on('click', 'cities-diamond', onCityClick)
-    map.on('click', 'letters-hit', onLetterClick)
     map.on('mouseenter', 'cities-circle', setPointer)
     map.on('mouseleave', 'cities-circle', clearPointer)
     map.on('mouseenter', 'cities-diamond', setPointer)
     map.on('mouseleave', 'cities-diamond', clearPointer)
-    map.on('mouseenter', 'letters-hit', setPointer)
-    map.on('mouseleave', 'letters-hit', clearPointer)
 
     const ro = new ResizeObserver(() => {
       map.resize()
@@ -201,173 +190,6 @@ function MediterraneanMapLibre() {
     // Intentionally once: map lifecycle. Click handlers close over stable app setters.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  // --- GeoJSON updates ---
-  const journeyData = useMemo((): FC => {
-    if (!showJourneys) return EMPTY
-    return {
-      type: 'FeatureCollection',
-      features: JOURNEYS.map((j) => {
-        const coords = j.waypoints
-          .map((id) => CITY_BY_ID[id])
-          .filter(Boolean)
-          .map((c) => [c.lon, c.lat] as [number, number])
-        return {
-          type: 'Feature' as const,
-          properties: { id: j.id, label: `${j.label} · ${j.years}` },
-          geometry: { type: 'LineString' as const, coordinates: coords },
-        }
-      }).filter((f) => f.geometry.coordinates.length >= 2),
-    }
-  }, [showJourneys])
-
-  const storyTravelData = useMemo((): FC => {
-    if (!showStoryTravels) return EMPTY
-    return {
-      type: 'FeatureCollection',
-      features: pastTravels
-        .map((ev) => {
-          const coords = ev.waypoints
-            .map((id) => CITY_BY_ID[id])
-            .filter(Boolean)
-            .map((c) => [c.lon, c.lat] as [number, number])
-          const live = current?.type === 'travel' && current.id === ev.id
-          return {
-            type: 'Feature' as const,
-            properties: {
-              id: ev.id,
-              mode: ev.mode,
-              live: live ? 1 : 0,
-              caption: ev.caption,
-            },
-            geometry: { type: 'LineString' as const, coordinates: coords },
-          }
-        })
-        .filter((f) => f.geometry.coordinates.length >= 2),
-    }
-  }, [showStoryTravels, pastTravels, current])
-
-  const letterBundle = useMemo(() => {
-    const letters: Letter[] = showLetters
-      ? visibleLetters
-      : showStoryLetters
-        ? LETTERS.filter((l) => revealedLetterIds.has(l.id))
-        : []
-
-    const mainFeatures: Feature[] = []
-    const altFeatures: Feature[] = []
-    const tipFeatures: Feature[] = []
-
-    for (const letter of letters) {
-      const d = datingOf(letter, app.filters.datingScheme)
-      const from = CITY_BY_ID[d.originId]
-      const to = CITY_BY_ID[letter.destinationId]
-      if (!from || !to) continue
-
-      const bulge = compact ? letter.arcBulge * 0.72 : letter.arcBulge
-      const forceState: ArcState | undefined = showStoryLetters
-        ? liveLetterId === letter.id
-          ? 'current'
-          : 'past'
-        : undefined
-      const state = forceState ?? arcState(letter, app.year, app.filters.datingScheme)
-      if (state === 'future' && !showStoryLetters) {
-        // Keep invisible in explore (matches SVG opacity 0)
-        // Still skip geometry to reduce clutter
-        continue
-      }
-
-      const color = AUDIENCE_META[letter.audienceType].color
-      const selected = app.selectedLetterId === letter.id
-      const dim = Boolean(app.selectedLetterId && !selected)
-      const opacity =
-        state === 'past' ? (dim ? 0.12 : 0.3) : dim ? 0.16 : 1
-      const coords = sampleLetterArc(from.lon, from.lat, to.lon, to.lat, bulge)
-      const label = `${letter.shortTitle}, ${d.originLabel} to ${letter.destinationLabel}, ${d.yearDisplay}`
-      const mid = coords[Math.floor(coords.length / 2)] ?? coords[0]
-
-      mainFeatures.push({
-        type: 'Feature',
-        properties: {
-          id: letter.id,
-          color,
-          state,
-          selected: selected ? 1 : 0,
-          opacity,
-          lineWidth: selected ? 3.2 : state === 'current' ? 2.6 : 2.1,
-          interactive: 1,
-          label,
-          shortTitle: letter.shortTitle,
-          showLabel: state === 'current' || selected ? 1 : 0,
-          midLon: mid[0],
-          midLat: mid[1],
-        },
-        geometry: { type: 'LineString', coordinates: coords },
-      })
-
-      tipFeatures.push({
-        type: 'Feature',
-        properties: {
-          id: letter.id,
-          color,
-          opacity,
-          bearing: arcTipBearing(from.lon, from.lat, to.lon, to.lat, bulge),
-        },
-        geometry: {
-          type: 'Point',
-          coordinates: coords[coords.length - 1] ?? [to.lon, to.lat],
-        },
-      })
-
-      if (d.altOriginId && state !== 'future') {
-        const alt = CITY_BY_ID[d.altOriginId]
-        if (alt) {
-          const altCoords = sampleLetterArc(alt.lon, alt.lat, to.lon, to.lat, bulge * -0.6)
-          altFeatures.push({
-            type: 'Feature',
-            properties: {
-              id: `${letter.id}-alt`,
-              color,
-              label: `Alternate origin debated: ${d.altOriginLabel}`,
-            },
-            geometry: { type: 'LineString', coordinates: altCoords },
-          })
-        }
-      }
-    }
-
-    // Letter mid labels as separate points
-    const labelFeatures: Feature[] = mainFeatures
-      .filter((f) => f.properties?.showLabel === 1 && !compact)
-      .map((f) => ({
-        type: 'Feature' as const,
-        properties: {
-          shortTitle: f.properties?.shortTitle,
-          opacity: f.properties?.opacity,
-        },
-        geometry: {
-          type: 'Point' as const,
-          coordinates: [f.properties?.midLon as number, f.properties?.midLat as number],
-        },
-      }))
-
-    return {
-      letters: { type: 'FeatureCollection' as const, features: mainFeatures },
-      alts: { type: 'FeatureCollection' as const, features: altFeatures },
-      tips: { type: 'FeatureCollection' as const, features: tipFeatures },
-      labels: { type: 'FeatureCollection' as const, features: labelFeatures },
-    }
-  }, [
-    showLetters,
-    showStoryLetters,
-    visibleLetters,
-    revealedLetterIds,
-    liveLetterId,
-    app.filters.datingScheme,
-    app.year,
-    app.selectedLetterId,
-    compact,
-  ])
 
   const prisonData = useMemo((): FC => {
     if (!showPrisons) return EMPTY
@@ -389,8 +211,6 @@ function MediterraneanMapLibre() {
   const cityData = useMemo((): FC => {
     const cities = CITIES.filter((c) => {
       if (START_LABEL_IDS.has(c.id)) return true
-      if (app.phase !== 'explore') return false
-      if (showJourneys) return true
       return c.letterRelevant || Boolean(CITY_CONTEXT_BY_ID[c.id])
     })
 
@@ -398,13 +218,13 @@ function MediterraneanMapLibre() {
       type: 'FeatureCollection',
       features: cities
         .filter((city) => {
-          const named = START_LABEL_IDS.has(city.id)
+          const named = START_LABEL_IDS.has(city.id) || city.letterRelevant
           const selected = app.cityId === city.id
           if (compact && !named && !selected) return false
           return true
         })
         .map((city) => {
-          const named = START_LABEL_IDS.has(city.id)
+          const named = START_LABEL_IDS.has(city.id) || city.letterRelevant
           const selected = app.cityId === city.id
           return {
             type: 'Feature' as const,
@@ -417,31 +237,25 @@ function MediterraneanMapLibre() {
               selected: selected ? 1 : 0,
               planted: city.planted ? 1 : 0,
               diamond: city.id === 'damascus_road' ? 1 : 0,
-              radius: selected ? (named ? 8 : 6.5) : named ? 5.5 : 3.5,
+              radius: selected ? (named ? 8.5 : 7) : named ? 6.5 : 4,
             },
             geometry: { type: 'Point' as const, coordinates: [city.lon, city.lat] },
           }
         }),
     }
-  }, [app.phase, app.cityId, showJourneys, compact])
+  }, [app.cityId, compact])
 
   useEffect(() => {
     const map = mapRef.current
     const push = () => {
       if (!map || !readyRef.current || !map.isStyleLoaded()) return
-      setSourceData(map, SRC.journeys, journeyData)
-      setSourceData(map, SRC.storyTravels, storyTravelData)
-      setSourceData(map, SRC.letters, letterBundle.letters)
-      setSourceData(map, SRC.letterAlts, letterBundle.alts)
-      setSourceData(map, SRC.letterTips, letterBundle.tips)
-      setSourceData(map, 'lr-letter-labels', letterBundle.labels)
       setSourceData(map, SRC.prisons, prisonData)
       setSourceData(map, SRC.cities, cityData)
     }
 
     pendingPushRef.current = push
     push()
-  }, [journeyData, storyTravelData, letterBundle, prisonData, cityData])
+  }, [prisonData, cityData])
 
   function zoomIn() {
     mapRef.current?.zoomIn({ animate: !reduced })
@@ -463,21 +277,21 @@ function MediterraneanMapLibre() {
         ref={wrapRef}
         className="map-wrap map-wrap--maplibre"
         role="img"
-        aria-label="Eastern Mediterranean map with Paul’s letters drawn as directed arcs from origin to destination"
+        aria-label="Eastern Mediterranean map of cities in the life and letters of Paul"
       />
 
       <aside className="legend-card" aria-label="Map legend">
         <div className="legend-row">
-          <span className="swatch is-solid" />
-          Overland — solid
+          <span className="swatch is-city" />
+          Pauline place
         </div>
         <div className="legend-row">
-          <span className="swatch is-dotted" />
-          Ocean — dotted
+          <span className="swatch is-planted" />
+          Church Paul planted
         </div>
         <div className="legend-row">
-          <span className="swatch is-dashed" />
-          Letter — dashed
+          <span className="swatch is-road" />
+          Roman road
         </div>
       </aside>
 
@@ -492,68 +306,82 @@ function MediterraneanMapLibre() {
           ⌖
         </button>
       </div>
-
-      {app.phase === 'explore' && visibleLetters.length === 0 && app.layers.letters && (
-        <div className="caption-card" role="status" style={{ whiteSpace: 'normal' }}>
-          No letters match these filters.{' '}
-          <button
-            type="button"
-            className="linkish"
-            onClick={app.clearFilters}
-            style={{ display: 'inline', width: 'auto' }}
-          >
-            Clear filters
-          </button>
-        </div>
-      )}
-
-      {app.phase === 'playing' && current && (
-        <div className="play-caption play-caption--overlay">
-          <div className="play-caption-dates">{current.dates}</div>
-          <div className="play-caption-text">{current.caption}</div>
-        </div>
-      )}
     </div>
   )
 }
 
 function setSourceData(map: MapLibreMap, id: string, data: FC) {
   const src = map.getSource(id) as GeoJSONSource | undefined
-  // MapLibre's GeoJSON typings expect the DOM GeoJSON namespace; our FC is structurally compatible.
   if (src) src.setData(data as Parameters<GeoJSONSource['setData']>[0])
 }
 
-function ensureSources(map: MapLibreMap) {
-  if (!map.getSource(SRC.land)) {
-    map.addSource(SRC.land, {
-      type: 'geojson',
-      data: {
-        type: 'FeatureCollection',
-        features: (landGeojson as unknown as { features: FC['features'] }).features,
-      } as Parameters<GeoJSONSource['setData']>[0],
-      attribution: LAND_ATTRIBUTION,
-    })
+function muteBasemap(map: MapLibreMap) {
+  const style = map.getStyle() as StyleSpecification | undefined
+  const layers = style?.layers
+  if (!layers) return
+
+  for (const layer of layers) {
+    const id = layer.id
+    if (HIDE_LAYER_IDS.has(id)) {
+      try {
+        map.setLayoutProperty(id, 'visibility', 'none')
+      } catch {
+        /* layer may lack layout */
+      }
+      continue
+    }
+
+    const opacity = MUTE_OPACITY[id]
+    if (opacity == null) continue
+
+    try {
+      if (layer.type === 'symbol') {
+        map.setPaintProperty(id, 'text-opacity', opacity)
+        map.setPaintProperty(id, 'icon-opacity', Math.min(opacity, 0.35))
+        // Slightly smaller modern place names so our city labels win.
+        if (id.startsWith('label_')) {
+          const size = map.getLayoutProperty(id, 'text-size')
+          if (typeof size === 'number') {
+            map.setLayoutProperty(id, 'text-size', Math.max(9, size * 0.78))
+          }
+        }
+      } else if (layer.type === 'line') {
+        map.setPaintProperty(id, 'line-opacity', opacity)
+        map.setPaintProperty(id, 'line-color', '#a8a29a')
+      }
+    } catch (err) {
+      console.warn('[maplibre] mute failed for', id, err)
+    }
   }
+
+  // Keep OpenFreeMap Natural Earth shaded relief (topography) at mid weight.
+  if (map.getLayer('natural_earth')) {
+    try {
+      map.setPaintProperty('natural_earth', 'raster-opacity', [
+        'interpolate',
+        ['exponential', 1.5],
+        ['zoom'],
+        0,
+        0.55,
+        6,
+        0.22,
+      ])
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+function ensureSources(map: MapLibreMap) {
   if (!map.getSource(SRC.roads)) {
     map.addSource(SRC.roads, {
       type: 'geojson',
-      // Large AWMC extract: load by URL (public/), not bundled JSON import.
       data: `${import.meta.env.BASE_URL}geo/roman-roads.geojson`,
       attribution:
         'Ancient World Mapping Center roads (ODbL 1.0); Barrington Atlas / OSM derived',
     })
   }
-  const ids = [
-    SRC.journeys,
-    SRC.storyTravels,
-    SRC.letters,
-    SRC.letterAlts,
-    SRC.letterTips,
-    'lr-letter-labels',
-    SRC.prisons,
-    SRC.cities,
-  ]
-  for (const id of ids) {
+  for (const id of [SRC.prisons, SRC.cities]) {
     if (!map.getSource(id)) {
       map.addSource(id, { type: 'geojson', data: EMPTY })
     }
@@ -561,36 +389,7 @@ function ensureSources(map: MapLibreMap) {
 }
 
 function ensureLayers(map: MapLibreMap) {
-  // Natural Earth land (same rings as the SVG atlas) under routes/cities.
-  if (!map.getLayer('lr-land-fill')) {
-    map.addLayer({
-      id: 'lr-land-fill',
-      type: 'fill',
-      source: SRC.land,
-      paint: {
-        'fill-color': '#e8dfd0',
-        'fill-opacity': 0.35,
-      },
-    })
-  }
-  if (!map.getLayer('lr-land-coast')) {
-    map.addLayer({
-      id: 'lr-land-coast',
-      type: 'line',
-      source: SRC.land,
-      paint: {
-        'line-color': '#8a7354',
-        'line-width': 1.1,
-        'line-opacity': 0.85,
-      },
-      layout: {
-        'line-cap': 'round',
-        'line-join': 'round',
-      },
-    })
-  }
-
-  // AWMC / Barrington-derived Roman roads (clipped to atlas bbox).
+  // AWMC / Barrington-derived Roman roads (clipped to atlas bbox) — mid weight.
   if (!map.getLayer('roman-roads-minor')) {
     map.addLayer({
       id: 'roman-roads-minor',
@@ -600,7 +399,7 @@ function ensureLayers(map: MapLibreMap) {
       paint: {
         'line-color': '#9a8b78',
         'line-width': 0.9,
-        'line-opacity': 0.4,
+        'line-opacity': 0.42,
       },
       layout: {
         'line-cap': 'round',
@@ -621,154 +420,15 @@ function ensureLayers(map: MapLibreMap) {
           ['linear'],
           ['zoom'],
           3.5,
-          1.15,
+          1.2,
           7,
-          1.85,
+          2.0,
         ],
-        'line-opacity': 0.55,
+        'line-opacity': 0.58,
       },
       layout: {
         'line-cap': 'round',
         'line-join': 'round',
-      },
-    })
-  }
-
-  if (!map.getLayer('journeys-line')) {
-    map.addLayer({
-      id: 'journeys-line',
-      type: 'line',
-      source: SRC.journeys,
-      paint: {
-        'line-color': '#5c4a38',
-        'line-width': 2.4,
-        'line-opacity': 0.45,
-      },
-      layout: {
-        'line-cap': 'round',
-        'line-join': 'round',
-      },
-    })
-  }
-
-  if (!map.getLayer('story-travels-land')) {
-    map.addLayer({
-      id: 'story-travels-land',
-      type: 'line',
-      source: SRC.storyTravels,
-      filter: ['==', ['get', 'mode'], 'land'],
-      paint: {
-        'line-color': '#5c4a38',
-        'line-width': 2.4,
-        'line-opacity': ['case', ['==', ['get', 'live'], 1], 1, 0.45],
-      },
-      layout: {
-        'line-cap': 'round',
-        'line-join': 'round',
-      },
-    })
-  }
-
-  if (!map.getLayer('story-travels-sea')) {
-    map.addLayer({
-      id: 'story-travels-sea',
-      type: 'line',
-      source: SRC.storyTravels,
-      filter: ['==', ['get', 'mode'], 'sea'],
-      paint: {
-        'line-color': '#2f5d6e',
-        'line-width': 2.6,
-        'line-opacity': ['case', ['==', ['get', 'live'], 1], 1, 0.45],
-        'line-dasharray': [0.5, 2],
-      },
-      layout: {
-        'line-cap': 'round',
-        'line-join': 'round',
-      },
-    })
-  }
-
-  if (!map.getLayer('letter-alts-line')) {
-    map.addLayer({
-      id: 'letter-alts-line',
-      type: 'line',
-      source: SRC.letterAlts,
-      paint: {
-        'line-color': ['get', 'color'],
-        'line-width': 1.4,
-        'line-opacity': 0.45,
-        'line-dasharray': [2, 1.4],
-      },
-      layout: { 'line-cap': 'round' },
-    })
-  }
-
-  if (!map.getLayer('letters-hit')) {
-    map.addLayer({
-      id: 'letters-hit',
-      type: 'line',
-      source: SRC.letters,
-      paint: {
-        'line-color': '#000000',
-        'line-width': 16,
-        'line-opacity': 0.01,
-      },
-    })
-  }
-
-  if (!map.getLayer('letters-line')) {
-    map.addLayer({
-      id: 'letters-line',
-      type: 'line',
-      source: SRC.letters,
-      paint: {
-        'line-color': ['get', 'color'],
-        'line-width': ['get', 'lineWidth'],
-        'line-opacity': ['get', 'opacity'],
-        'line-dasharray': [2, 1.4],
-      },
-      layout: { 'line-cap': 'round', 'line-join': 'round' },
-    })
-  }
-
-  if (!map.getLayer('letter-tips')) {
-    map.addLayer({
-      id: 'letter-tips',
-      type: 'symbol',
-      source: SRC.letterTips,
-      layout: {
-        'icon-image': 'lr-arrow',
-        'icon-size': 0.55,
-        'icon-rotate': ['get', 'bearing'],
-        'icon-rotation-alignment': 'map',
-        'icon-allow-overlap': true,
-        'icon-ignore-placement': true,
-      },
-      paint: {
-        'icon-color': ['get', 'color'],
-        'icon-opacity': ['get', 'opacity'],
-      },
-    })
-  }
-
-  if (!map.getLayer('letter-labels')) {
-    map.addLayer({
-      id: 'letter-labels',
-      type: 'symbol',
-      source: 'lr-letter-labels',
-      layout: {
-        'text-field': ['get', 'shortTitle'],
-        'text-size': 12,
-        'text-font': ['Noto Sans Bold'],
-        'text-offset': [0, -0.8],
-        'text-allow-overlap': true,
-        'text-ignore-placement': true,
-      },
-      paint: {
-        'text-color': '#1a3344',
-        'text-halo-color': 'rgba(255, 248, 238, 0.92)',
-        'text-halo-width': 1.6,
-        'text-opacity': ['get', 'opacity'],
       },
     })
   }
@@ -805,14 +465,15 @@ function ensureLayers(map: MapLibreMap) {
           'case',
           ['==', ['get', 'selected'], 1],
           '#e8c97a',
-          '#2a3338',
+          '#1a2a33',
         ],
         'circle-stroke-width': [
           'case',
           ['==', ['get', 'selected'], 1],
-          2.4,
-          1.3,
+          2.6,
+          1.5,
         ],
+        'circle-opacity': 1,
       },
     })
   }
@@ -828,8 +489,8 @@ function ensureLayers(map: MapLibreMap) {
         'icon-size': [
           'case',
           ['==', ['get', 'selected'], 1],
-          0.85,
-          0.7,
+          0.9,
+          0.75,
         ],
         'icon-allow-overlap': true,
         'icon-ignore-placement': true,
@@ -837,6 +498,7 @@ function ensureLayers(map: MapLibreMap) {
     })
   }
 
+  // Forefront: Pauline atlas city labels — strongest text on the map.
   if (!map.getLayer('cities-label')) {
     map.addLayer({
       id: 'cities-label',
@@ -849,27 +511,39 @@ function ensureLayers(map: MapLibreMap) {
       ],
       layout: {
         'text-field': ['get', 'shortLabel'],
-        'text-size': 12,
+        'text-size': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          3.5,
+          13,
+          6,
+          15,
+          9,
+          17,
+        ],
         'text-font': ['Noto Sans Bold'],
-        'text-offset': [1.1, -0.7],
+        'text-offset': [1.15, -0.75],
         'text-anchor': 'left',
         'text-allow-overlap': true,
         'text-ignore-placement': true,
+        'symbol-sort-key': 0,
       },
       paint: {
         'text-color': [
           'case',
           ['==', ['get', 'selected'], 1],
-          '#f7f4ee',
-          '#1a3344',
+          '#fff8ee',
+          '#14222c',
         ],
         'text-halo-color': [
           'case',
           ['==', ['get', 'selected'], 1],
-          'rgba(36, 63, 92, 0.85)',
-          'rgba(255, 248, 238, 0.92)',
+          'rgba(36, 63, 92, 0.92)',
+          'rgba(255, 248, 238, 0.95)',
         ],
-        'text-halo-width': 1.6,
+        'text-halo-width': 2.2,
+        'text-opacity': 1,
       },
     })
   }
@@ -878,9 +552,6 @@ function ensureLayers(map: MapLibreMap) {
 function addOverlayImages(map: MapLibreMap) {
   if (!map.hasImage('lr-diamond')) {
     map.addImage('lr-diamond', drawDiamond(28), { pixelRatio: 2 })
-  }
-  if (!map.hasImage('lr-arrow')) {
-    map.addImage('lr-arrow', drawArrow(24), { pixelRatio: 2, sdf: true })
   }
   if (!map.hasImage('lr-prison')) {
     map.addImage('lr-prison', drawPrison(22), { pixelRatio: 2 })
@@ -906,23 +577,6 @@ function drawDiamond(size: number): ImageData {
   ctx.strokeStyle = '#f7f4ee'
   ctx.lineWidth = 1.6
   ctx.stroke()
-  return ctx.getImageData(0, 0, size, size)
-}
-
-function drawArrow(size: number): ImageData {
-  const canvas = document.createElement('canvas')
-  canvas.width = size
-  canvas.height = size
-  const ctx = canvas.getContext('2d')!
-  // Pointing up (north); MapLibre rotates via icon-rotate / bearing
-  ctx.beginPath()
-  ctx.moveTo(size / 2, 2)
-  ctx.lineTo(size - 3, size - 3)
-  ctx.lineTo(size / 2, size - 7)
-  ctx.lineTo(3, size - 3)
-  ctx.closePath()
-  ctx.fillStyle = '#ffffff'
-  ctx.fill()
   return ctx.getImageData(0, 0, size, size)
 }
 
