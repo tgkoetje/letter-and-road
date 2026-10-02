@@ -1,0 +1,196 @@
+{
+  "essays": {
+    "before-paul": {
+      "id": "before-paul",
+      "title": "Before Paul: The Persecutor",
+      "cardBlurb": "Why Saul of Tarsus opposed “the Way”—Pharisee zeal, Stephen’s blood, and the road that reversed him. Jump to the Damascus hinge (~AD 34).",
+      "lead": "Saul of Tarsus was not a bored skeptic who stumbled into violence. He was a convinced Pharisee who believed the crucified Jesus was a curse under the Law—and that crushing the fledgling church was faithfulness to God. Acts tells that story without soft-focus. Then Acts says the risen Jesus stops him on the Damascus road—and the same man later writes of that past without scrubbing it.\n\nThis essay is the pre-conversion porch for that hinge. It does not invent a birth year or a secret psychology. It follows Acts, then lets Paul name his own past in the letters.",
+      "sections": [
+        {
+          "id": "credentials",
+          "label": "Credentials",
+          "paragraphs": [
+            "Saul is a Jew of the tribe of Benjamin, a Hebrew of Hebrews, and a Roman citizen of Tarsus in Cilicia (Acts 21:39; 22:3, 25–28; Philippians 3:5). Scripture places his formation in Jerusalem “at the feet of Gamaliel,” trained in the ancestral law as a Pharisee (Acts 22:3; 26:4–5). He later says he advanced in Judaism beyond many of his own age, “extremely zealous” for the traditions of the fathers (Galatians 1:14).",
+            "Honest framing: this is serious religious formation, not cartoon fanaticism. Zeal for the Law was, in Saul’s world, a virtue."
+          ],
+          "labels": [
+            {
+              "kind": "Scripture",
+              "text": "Acts 21:39; 22:3, 25–28; 26:4–5; Philippians 3:5–6; Galatians 1:13–14."
+            },
+            {
+              "kind": "Dating note",
+              "text": "Exact birth year is not stated. Consensus reconstruction places birth roughly in the first decade of the century; that is chronology, not a biblical birth notice."
+            }
+          ]
+        },
+        {
+          "id": "zeal",
+          "label": "Zeal",
+          "paragraphs": [
+            "The earliest Christian claim—that Israel’s Messiah had been crucified and raised—was not a minor synagogue dispute. Acts narrates Saul’s zeal and violence; it does not quote Saul citing Deuteronomy 21:23. A common evangelical and scholarly reconstruction of the scandal is that Deuteronomy 21:23—“a hanged man is cursed by God”—made “Messiah crucified” sound like blasphemous nonsense under Torah as Saul knew it. On that reading, persecuting “the Way” could feel like defending God’s honor, not abandoning it. Label the Deut 21:23 motive as reconstruction; do not present it as Saul’s stated exegesis in Acts.",
+            "Acts never softens the persecution into mere misunderstanding. Paul himself later admits he “persecuted the church of God violently and tried to destroy it” (Galatians 1:13), and that he was “as to zeal, a persecutor of the church” (Philippians 3:6). The letters refuse a scrubbed biography."
+          ],
+          "labels": [
+            {
+              "kind": "Scripture (Acts / letters)",
+              "text": "Galatians 1:13–14; Philippians 3:4–11; Acts 26:9–11."
+            },
+            {
+              "kind": "Reconstruction (labeled)",
+              "text": "Deuteronomy 21:23 as a frequent explanation of why a crucified Messiah was intolerable—useful for teaching, not a verse Acts puts in Saul’s mouth."
+            }
+          ]
+        },
+        {
+          "id": "first-blood",
+          "label": "First blood",
+          "paragraphs": [
+            "Acts places Saul at Stephen’s martyrdom: witnesses lay their garments at the feet of a young man named Saul; Saul approves the killing (Acts 7:54–8:1). Then “a great persecution” arises against the church in Jerusalem. Believers scatter; Saul ravages the church, entering house after house, dragging off men and women to prison (Acts 8:1–3). In his defense speeches he adds that he bound and delivered saints to prison, voted for their death, and pursued them even to foreign cities (Acts 22:4–5; 26:9–11).",
+            "This is the flashpoint the atlas jump uses: Acts 7–9 as the run-up to Damascus."
+          ],
+          "labels": [
+            {
+              "kind": "Scripture",
+              "text": "Acts 7:54–8:3; 22:4–5; 26:9–11; Galatians 1:13; 1 Corinthians 15:9."
+            },
+            {
+              "kind": "Dating note",
+              "text": "Consensus places Stephen and the persecution outbreak roughly c. AD 32–34; the year is reconstruction around Acts’ sequence, not a stamped calendar in the text."
+            }
+          ]
+        },
+        {
+          "id": "the-journey",
+          "label": "The journey",
+          "paragraphs": [
+            "Still “breathing threats and murder,” Saul asks the high priest for letters to the synagogues at Damascus, intending to bind followers of the Way and bring them to Jerusalem (Acts 9:1–2). Near Damascus a light from heaven flashes; he falls; a voice asks, “Saul, Saul, why are you persecuting me?” The speaker identifies himself: “I am Jesus, whom you are persecuting” (Acts 9:3–5; cf. 22:6–11; 26:12–18). Blinded, he is led into the city. The Lord sends Ananias; scales fall; Saul is baptized and immediately proclaims that Jesus is the Son of God (Acts 9:10–22).",
+            "Acts makes the reversal public and costly: in the city he came to raid, Saul is baptized and begins to proclaim Jesus. Paul’s letters later interpret the same hinge as God’s call by grace: God “was pleased to reveal his Son to me” (Galatians 1:15–16); Christ appeared “last of all, as to one untimely born” (1 Corinthians 15:8)."
+          ],
+          "labels": [
+            {
+              "kind": "Scripture",
+              "text": "Acts 9:1–22; 22:6–16; 26:12–18; Galatians 1:15–16; 1 Corinthians 15:8."
+            },
+            {
+              "kind": "Dating note",
+              "text": "Consensus ~AD 34 (some evangelical chronologies prefer 33 or 35 depending on the crucifixion year). The event itself is fixed by Acts 9 / 22 / 26."
+            }
+          ]
+        },
+        {
+          "id": "letter-voice",
+          "label": "Letter voice (Consensus anchors)",
+          "paragraphs": [
+            "Paul never treats his pre-conversion years as a cute origin story. In undisputed letter anchors he calls himself “unworthy to be called an apostle, because I persecuted the church of God” (1 Corinthians 15:9) and ranks former confidence in the flesh as loss “because of the surpassing worth of knowing Christ Jesus my Lord” (Philippians 3:7–8); Galatians 1:13–14 names the same violent past.",
+            "Consensus Pastoral (chip separately — not bare “Paul’s own voice”): On this atlas’s house framing, 1 Timothy is read as Pauline. 1 Timothy 1:12–16 names the writer formerly a blasphemer, persecutor, and insolent opponent—yet shown mercy so that Christ Jesus might display perfect patience as an example for those who would believe. Wider Protestant debate over Pastoral authorship exists; this site’s About boundary is chronology/dating forks, not late-authorship schemes—so keep the chip honest: Consensus Pastoral, not an undifferentiated Galatians/Philippians voice."
+          ],
+          "letterAnchors": [
+            {
+              "passage": "Galatians 1:13–14",
+              "chip": "Consensus letter",
+              "note": "Violent persecution; zeal for the fathers’ traditions"
+            },
+            {
+              "passage": "Philippians 3:4–11",
+              "chip": "Consensus letter",
+              "note": "Pharisee credentials counted as loss for Christ"
+            },
+            {
+              "passage": "1 Corinthians 15:9",
+              "chip": "Consensus letter",
+              "note": "Unworthiness because he persecuted the church"
+            },
+            {
+              "passage": "1 Timothy 1:12–16",
+              "chip": "Consensus Pastoral",
+              "note": "Mercy to the foremost of sinners; example of patience"
+            }
+          ]
+        }
+      ]
+    },
+    "after-acts": {
+      "id": "after-acts",
+      "title": "After Acts: The End of Paul",
+      "cardBlurb": "Acts ends in Rome with Paul still proclaiming—no martyrdom scene on the page. What Scripture says, what tradition remembers, and how to keep them apart. Jump to Rome (~AD 62).",
+      "lead": "Luke’s second volume ends with Paul in Rome under guard, welcoming all who come, “proclaiming the kingdom of God and teaching about the Lord Jesus Christ with all boldness and without hindrance” (Acts 28:30–31). There is no courtroom finale, no sword, no Spain itinerary narrated. Visitors who ask “what happened next?” deserve an honest answer: Scripture stops here—then early Christian memory and evangelical reconstruction pick up with sources and confidence labels, not with invented Bible verses.\n\nThis essay is the late-Paul porch for that open ending. It presents forks you can inspect. It does not force a single cinematic martyrdom as “what the Bible says.”",
+      "sections": [
+        {
+          "id": "acts-quiet",
+          "label": "Where Acts Goes Quiet",
+          "paragraphs": [
+            "Acts 28:16–31 gives Paul in Rome, rented quarters, under guard, and two years of open proclamation. It does not settle a martyrdom scene, a release, or a Spain trip.",
+            "Romans 15:24, 28 records Paul’s clear plan to go on to Spain after Rome and the collection—not whether that plan was later fulfilled.",
+            "2 Timothy 4:6–8, 16–18 carries farewell tone—“poured out as a drink offering,” crown of righteousness, the Lord will bring him safely into his heavenly kingdom—(Consensus: late Pauline charge). It names no emperor, no beheading narrative, and no calendar year.",
+            "Scripture line: Acts ends with the gospel unhindered in Rome. The New Testament does not narrate Paul’s death.",
+            "Consensus framing already used on this project: Prison Letters with Acts 28 Rome house arrest; Pastorals after a release; 2 Timothy from a final, harsher imprisonment."
+          ],
+          "chips": [
+            "Scripture"
+          ],
+          "labels": [
+            {
+              "kind": "Scripture",
+              "text": "Acts 28; Romans 15; 2 Timothy 4."
+            }
+          ]
+        },
+        {
+          "id": "rome-sword",
+          "label": "Rome and the sword",
+          "confidence": "Early tradition (strong memory) → legendary elaboration (low as raw history)",
+          "paragraphs": [
+            "Evangelical Consensus holds that Paul was martyred in Rome under Nero in the mid-60s after Acts. That reconstruction rests on (1) 2 Timothy’s readiness for death, (2) early church memory, and (3) the usual chronology of Nero’s reign—not on a New Testament execution scene.",
+            "2 Timothy 4:6–8, 16–18 — Scripture. Farewell tone and trust that the Lord will rescue him “into his heavenly kingdom.” Implies approaching death for many readers; does not name Nero or describe a sword.",
+            "1 Clement 5 (c. AD 96) — Early tradition. Remembers Paul’s endurance and martyrdom; speaks of reaching the “furthest limits of the west” (see Spain branch for the interpretive debate).",
+            "Acts of Paul (2nd century) — Legendary narrative, low confidence as history. Beheading under Nero; famous motifs (including “milk instead of blood”) belong to pious storytelling, not to Acts.",
+            "Later church memory — Rome under Nero as the dominant traditional ending; feast association with Peter on June 29 (memory, not a biblical calendar).",
+            "Never present “beheaded under Nero” as a Bible verse. Present it as tradition illuminating what Acts leaves open, with confidence marked."
+          ],
+          "chips": [
+            "Scripture",
+            "Early tradition",
+            "Legendary",
+            "Wider"
+          ],
+          "labels": [
+            {
+              "kind": "Dating note",
+              "text": "Consensus window c. AD 64–67. Wider Protestant nuance: some prefer nearer AD 64 (after the fire and Neronian persecution), others nearer AD 67 (toward Nero’s end). Exact year within the mid-60s is not fixed by Scripture."
+            }
+          ]
+        },
+        {
+          "id": "spanish-question",
+          "label": "The Spanish question",
+          "confidence": "Plan = Scripture (clear). Fulfillment = Wider Protestant / contested tradition.",
+          "paragraphs": [
+            "Plan attested: Paul writes that he hopes to see the Romans in passing “and to be helped on my journey there by you, once I have enjoyed your company for a while,” and again that when he has delivered the collection he will go on “by way of you to Spain” (Romans 15:24, 28).",
+            "Acts silent on fulfillment: Luke never narrates a western journey beyond Rome.",
+            "Consensus on this site: Release after the Acts 28 biennium is the usual reconstruction (release-spain-plan); Romans records the desire and plan.",
+            "Wider Protestant only: Whether Paul later fulfilled Spain—often argued from 1 Clement’s “limit of the west” and later writers—is post-Acts inference, not New Testament narrative.",
+            "Do not force visitors to pick Spain “yes” or “no” as doctrine. Show the plan as Scripture; show fulfillment as an open fork with sources."
+          ],
+          "chips": [
+            "Scripture",
+            "Wider"
+          ]
+        },
+        {
+          "id": "relics-memory",
+          "label": "Relics and memory",
+          "confidence": "Archaeological / liturgical memory of the church — not a substitute for Acts",
+          "paragraphs": [
+            "Later Christian memory locates Paul’s burial tradition along the Via Ostiense at what became the Basilica of Saint Paul Outside the Walls. The shared traditional feast with Peter on June 29 marks how the church remembered the apostles in Rome. These sites and dates teach reception history—how believers honored Paul—without rewriting Luke’s open ending or supplying a missing martyrdom chapter.",
+            "Use: short panel + optional external reading; always subordinate to Acts 28 and 2 Timothy. Timeline title for martyrdom-nero: End of Paul (tradition after Acts)."
+          ],
+          "chips": [
+            "Wider",
+            "Early tradition"
+          ]
+        }
+      ]
+    }
+  }
+}

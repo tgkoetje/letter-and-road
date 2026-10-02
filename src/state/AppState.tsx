@@ -13,6 +13,7 @@ import { LETTER_BY_ID } from '../data/letters'
 import { useReducedMotion } from '../hooks'
 import { trackPageView } from '../lib/analytics'
 import { yearBounds } from '../lib/chronology'
+import type { ModuleEssayId } from '../data/module-essays'
 import type { DatingScheme, Filters, Layers, PeriodId, PlantedFilter, StoryPhase, ViewId } from '../types'
 
 const STORAGE_KEY = 'letter-and-road:v4'
@@ -42,6 +43,7 @@ interface AppState {
   showScrubber: boolean
   showTeachingNotes: boolean
   cityId: string | null
+  moduleEssayId: ModuleEssayId | null
 }
 
 type Action =
@@ -68,6 +70,7 @@ type Action =
   | { type: 'enterBeforePaul' }
   | { type: 'enterAfterPaul' }
   | { type: 'enterVoices' }
+  | { type: 'clearModuleEssay' }
   | { type: 'setMenuOpen'; open: boolean }
   | { type: 'setShowTimeline'; value: boolean }
   | { type: 'setShowLifeTimeline'; value: boolean }
@@ -102,6 +105,7 @@ const initialState: AppState = {
   showScrubber: true,
   showTeachingNotes: false,
   cityId: null,
+  moduleEssayId: null,
 }
 
 function normalizeScheme(_raw?: string): DatingScheme {
@@ -145,9 +149,14 @@ function reducer(state: AppState, action: Action): AppState {
       }
     }
     case 'setView':
-      return { ...state, view: action.view, cityId: null, phase: 'explore' }
+      return { ...state, view: action.view, cityId: null, moduleEssayId: null, phase: 'explore' }
     case 'selectLetter':
-      return { ...state, selectedLetterId: action.id, cityId: action.id ? null : state.cityId }
+      return {
+        ...state,
+        selectedLetterId: action.id,
+        cityId: action.id ? null : state.cityId,
+        moduleEssayId: action.id ? null : state.moduleEssayId,
+      }
     case 'setYear': {
       const { min, max } = yearBounds()
       return { ...state, year: Math.min(max, Math.max(min, action.year)) }
@@ -168,6 +177,7 @@ function reducer(state: AppState, action: Action): AppState {
         selectedLetterId: null,
         // Keep city drawer closed while the journey animates; map highlights via story event.
         cityId: null,
+        moduleEssayId: null,
         view: 'atlas',
         showScrubber: true,
       }
@@ -247,7 +257,7 @@ function reducer(state: AppState, action: Action): AppState {
       })
     }
     case 'enterBeforePaul':
-      // Existing bio: Stephen persecution → Damascus road (Acts 7–9 era). No new narrative.
+      // Existing bio: Stephen persecution → Damascus road (Acts 7–9 era) + Before Paul essay.
       return toExplore(state, {
         view: 'atlas',
         menuOpen: false,
@@ -256,9 +266,10 @@ function reducer(state: AppState, action: Action): AppState {
         year: 34,
         cityId: 'damascus_road',
         selectedLetterId: null,
+        moduleEssayId: 'before-paul',
       })
     case 'enterAfterPaul':
-      // Acts open end + late Rome / 2 Timothy era via existing timeline + city. Tradition not asserted as Scripture.
+      // Acts open end + late Rome / 2 Timothy era via existing timeline + city + After Acts essay.
       return toExplore(state, {
         view: 'atlas',
         menuOpen: false,
@@ -267,6 +278,7 @@ function reducer(state: AppState, action: Action): AppState {
         year: 62,
         cityId: 'rome',
         selectedLetterId: null,
+        moduleEssayId: 'after-acts',
       })
     case 'enterVoices':
       return toExplore(state, {
@@ -274,6 +286,7 @@ function reducer(state: AppState, action: Action): AppState {
         menuOpen: false,
         selectedLetterId: null,
         cityId: null,
+        moduleEssayId: null,
       })
     case 'setLayer': {
       const layers = { ...state.layers, [action.key]: action.value }
@@ -331,9 +344,13 @@ function reducer(state: AppState, action: Action): AppState {
         ...state,
         cityId: action.id,
         selectedLetterId: action.id ? null : state.selectedLetterId,
+        // Manual city pick dismisses module essay so CityDrawer can show.
+        moduleEssayId: action.id ? null : state.moduleEssayId,
         ...(hasBioPlace ? { showLifeTimeline: true } : {}),
       }
     }
+    case 'clearModuleEssay':
+      return { ...state, moduleEssayId: null }
     case 'applyRoute': {
       const deep = action.view !== 'atlas' || Boolean(action.letterId) || Boolean(action.compare[0])
       return {
@@ -363,6 +380,7 @@ interface AppContextValue extends AppState {
   enterBeforePaul: () => void
   enterAfterPaul: () => void
   enterVoices: () => void
+  clearModuleEssay: () => void
   setLayer: (key: keyof Layers, value: boolean) => void
   setPlantedFilter: (value: PlantedFilter) => void
   togglePeriod: (id: PeriodId) => void
@@ -519,7 +537,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           dispatch({ type: 'skipStory' })
           return
         }
-        if (state.selectedLetterId) dispatch({ type: 'selectLetter', id: null })
+        if (state.moduleEssayId) dispatch({ type: 'clearModuleEssay' })
+        else if (state.selectedLetterId) dispatch({ type: 'selectLetter', id: null })
         else if (state.cityId) dispatch({ type: 'setCity', id: null })
         else if (state.menuOpen) dispatch({ type: 'setMenuOpen', open: false })
         return
@@ -536,7 +555,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [state.selectedLetterId, state.cityId, state.phase, state.view, state.menuOpen])
+  }, [state.selectedLetterId, state.cityId, state.moduleEssayId, state.phase, state.view, state.menuOpen])
 
   const selectLetter = useCallback((id: string | null) => dispatch({ type: 'selectLetter', id }), [])
   const setView = useCallback((view: ViewId) => dispatch({ type: 'setView', view }), [])
@@ -558,6 +577,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const enterBeforePaul = useCallback(() => dispatch({ type: 'enterBeforePaul' }), [])
   const enterAfterPaul = useCallback(() => dispatch({ type: 'enterAfterPaul' }), [])
   const enterVoices = useCallback(() => dispatch({ type: 'enterVoices' }), [])
+  const clearModuleEssay = useCallback(() => dispatch({ type: 'clearModuleEssay' }), [])
   const setLayer = useCallback(
     (key: keyof Layers, value: boolean) => dispatch({ type: 'setLayer', key, value }),
     [],
@@ -622,6 +642,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       enterBeforePaul,
       enterAfterPaul,
       enterVoices,
+      clearModuleEssay,
       setLayer,
       setPlantedFilter,
       togglePeriod,
@@ -654,6 +675,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       enterBeforePaul,
       enterAfterPaul,
       enterVoices,
+      clearModuleEssay,
       setLayer,
       setPlantedFilter,
       togglePeriod,

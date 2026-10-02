@@ -1,8 +1,11 @@
+import { useState } from 'react'
+import { VOICES_ESSAYS, VOICES_LEDE } from '../data/voices-essays'
 import { ScriptureLink } from './ScriptureLink'
 
 /**
- * Lightweight stub from docs/others-on-paul-concept.md.
- * Passage links + one-liners only — no full essays. Content still parked.
+ * Voices on Paul — passage cards + expandable short essays.
+ * Critic must-fixes (2026-10-01): shorter lede; Peter authorship chip;
+ * paul-self visible Consensus chips. Independent human review still required.
  */
 const VOICES: {
   id: string
@@ -73,30 +76,63 @@ const VOICES: {
 ]
 
 export function VoicesPage() {
+  const [openId, setOpenId] = useState<string | null>(null)
+
   return (
     <article className="page voices-page">
       <h1>What others say about Paul</h1>
-      <p className="voices-lede">
-        A short reference frame for how other Scripture figures — and named opponents — viewed Paul.
-        Passage links open the ESV. Full essays for this module are still parked; these cards are
-        labels and anchors only.
-      </p>
+      <p className="voices-lede">{VOICES_LEDE}</p>
       <div className="voices-grid">
-        {VOICES.map((v) => (
-          <section key={v.id} className="voice-card">
-            <h2>{v.title}</h2>
-            {v.note ? <p className="voice-note">{v.note}</p> : null}
-            <p>{v.summary}</p>
-            <p className="voice-passages">
-              {v.passages.map((r, i) => (
-                <span key={r.search}>
-                  {i > 0 ? ' · ' : null}
-                  <ScriptureLink search={r.search}>{r.label}</ScriptureLink>
-                </span>
-              ))}
-            </p>
-          </section>
-        ))}
+        {VOICES.map((v) => {
+          const essay = VOICES_ESSAYS[v.id]
+          const expanded = openId === v.id
+          return (
+            <section key={v.id} className={`voice-card${expanded ? ' is-expanded' : ''}`}>
+              <h2>{v.title}</h2>
+              {v.note ? <p className="voice-note">{v.note}</p> : null}
+              {essay?.authorshipChip ? (
+                <p className="voice-authorship-chip">{essay.authorshipChip}</p>
+              ) : null}
+              {essay?.chips && essay.chips.length > 0 ? (
+                <div className="voice-consensus-chips" aria-label="Consensus chips">
+                  {essay.chips.map((c) => (
+                    <span key={c.passage} className="pill">
+                      <strong>{c.chip}</strong> · {c.passage}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+              <p>{v.summary}</p>
+              <p className="voice-passages">
+                {v.passages.map((r, i) => (
+                  <span key={r.search}>
+                    {i > 0 ? ' · ' : null}
+                    <ScriptureLink search={r.search}>{r.label}</ScriptureLink>
+                  </span>
+                ))}
+              </p>
+              {essay ? (
+                <>
+                  <button
+                    type="button"
+                    className="voice-expand-btn"
+                    aria-expanded={expanded}
+                    onClick={() => setOpenId(expanded ? null : v.id)}
+                  >
+                    {expanded ? 'Hide essay' : 'Read short essay'}
+                  </button>
+                  {expanded ? (
+                    <div className="voice-essay">
+                      {essay.paragraphs.map((p, i) => (
+                        <p key={i}>{p}</p>
+                      ))}
+                    </div>
+                  ) : null}
+                </>
+              ) : null}
+            </section>
+          )
+        })}
       </div>
       <p className="voices-foot">
         See also{' '}

@@ -1,0 +1,22 @@
+/**
+ * letter-and-road-pageviews — cookieless aggregate page-view counter.
+ * NOT deployed yet. When ready:
+ *   cd workers/letter-and-road-pageviews && npx wrangler deploy
+ * Then attach a route: letterandroad.com/api/pv*  (and pages.dev preview if wanted)
+ * Dataset is auto-created on first write.
+ */
+{
+  "name": "letter-and-road-pageviews",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "analytics_engine_datasets": [
+    {
+      "binding": "PAGEVIEWS",
+      "dataset": "letter_and_road_pageviews"
+    }
+  ],
+  "vars": {
+    "ALLOWED_ORIGINS": "https://letterandroad.com,https://letter-and-road.pages.dev"
+  }
+}

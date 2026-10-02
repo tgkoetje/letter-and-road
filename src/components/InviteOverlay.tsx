@@ -6,8 +6,7 @@ const STARTER_B = 'galatians'
 
 /**
  * First-visit invite adapted from docs/landing-page-concept.md,
- * with secondary entries into the other parked voice-call modules
- * (before / after / others) via existing atlas UI or a lightweight Voices stub.
+ * Secondary entries: Before Paul / After Acts essays + Voices module.
  */
 export function InviteOverlay() {
   const app = useApp()
@@ -119,7 +118,7 @@ export function InviteOverlay() {
             onClick={app.enterBeforePaul}
           >
             <strong>Jump to Damascus (Acts 7–9)</strong>
-            <span>Life-timeline anchor — full Before Paul essay still parked</span>
+            <span>Why Saul of Tarsus opposed “the Way”—Pharisee zeal, Stephen’s blood, and the road that reversed him. Jump to the Damascus hinge (~AD 34).</span>
           </button>
           <button
             type="button"
@@ -128,7 +127,7 @@ export function InviteOverlay() {
             onClick={app.enterAfterPaul}
           >
             <strong>Jump to Rome, end of Acts</strong>
-            <span>Open end of Acts — full After Acts essay still parked</span>
+            <span>Acts ends in Rome with Paul still proclaiming—no martyrdom scene on the page. What Scripture says, what tradition remembers, and how to keep them apart. Jump to Rome (~AD 62).</span>
           </button>
           <button
             type="button"

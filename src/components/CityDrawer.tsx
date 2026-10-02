@@ -52,7 +52,8 @@ export function CityDrawer() {
   }, [city])
 
   // Story playback uses map highlight + caption only — never cover the journey with the drawer.
-  if (!city || app.phase === 'playing') return null
+  // Module essay owns the sheet while open; city stays selected on the map.
+  if (!city || app.phase === 'playing' || app.moduleEssayId) return null
 
   const scheme = app.filters.datingScheme
   const linkedLetters = (pack?.letterIds ?? [])

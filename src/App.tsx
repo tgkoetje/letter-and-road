@@ -6,6 +6,7 @@ import { ExploreMenu, MapChrome, PageHeader } from './components/ExploreMenu'
 import { CityDrawer } from './components/CityDrawer'
 import { InviteOverlay } from './components/InviteOverlay'
 import { LetterDrawer } from './components/LetterDrawer'
+import { ModuleEssayPanel } from './components/ModuleEssayPanel'
 import { LifeTimeline } from './components/LifeTimeline'
 import { StoryTimeline } from './components/StoryTimeline'
 import { TimeScrubber } from './components/TimeScrubber'
@@ -46,6 +47,7 @@ function Shell() {
       </main>
       <LetterDrawer />
       <CityDrawer />
+      <ModuleEssayPanel />
       <InviteOverlay />
       <ConsentBanner />
     </div>
