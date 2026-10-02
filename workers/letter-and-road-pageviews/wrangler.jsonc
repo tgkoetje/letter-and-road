@@ -10,6 +10,10 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-10-01",
   "workers_dev": true,
+  "routes": [
+    { "pattern": "letterandroad.com/api/pv*", "zone_id": "7a96d51d53d96bef3186edc0c3a58025" }
+  ],
+
   "analytics_engine_datasets": [
     {
       "binding": "PAGEVIEWS",
