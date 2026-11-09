@@ -2218,11 +2218,11 @@ a.scripture-link,
   background: var(--sea, #5e7684);
 }
 
-/* Slim docked consent bar — under invite (60) / drawer (50) / map chrome (35).
+/* Slim docked consent bar — above invite (60) so Accept/Decline stay clickable.
    html.consent-pending reserves bottom space so scrubber/legend stay usable. */
 .consent-banner {
   position: fixed;
-  z-index: 28;
+  z-index: 70;
   left: 0;
   right: 0;
   bottom: 0;

@@ -116,8 +116,9 @@ export function AboutPage() {
       <h2>Privacy</h2>
       <p>
         Optional Google Analytics 4 helps us see aggregate traffic (which pages and hash routes
-        people open). Analytics cookies/storage stay off until you Accept on the consent banner.
-        Declining keeps the atlas fully usable without analytics.
+        people open). Visitors in the United States are measured unless they Decline on the notice
+        bar; elsewhere we ask first and keep analytics off until Accept. Declining keeps the atlas
+        fully usable without analytics.
       </p>
       <p>
         When you accept, Google acts as a processor for measurement events (page views). Google may
